@@ -11,7 +11,7 @@ import json
 import secrets
 from datetime import date, datetime, timedelta, timezone
 
-from . import archive, crypto, report
+from . import archive, config, crypto, report
 from .audit import AuditLog
 from .database import EncryptedDatabase, decrypt_file, now_iso
 from .keystore import AuthError, KeyStore, Session
@@ -50,11 +50,11 @@ class AppService:
     def needs_setup(self) -> bool:
         return not self.keystore.exists()
 
-    def setup(self, username: str, password: str) -> None:
+    def setup(self, username: str, password: str, eula_version: str | None = None) -> None:
         session = self.keystore.initialize(username, password)
         self.audit_log = AuditLog(self.keystore.log_public_key, self._audit_path)
         self._open(session)
-        self.audit("SETUP", details={"admin": username})
+        self.audit("SETUP", details={"admin": username, "eula_accepted": eula_version})
         self.audit("LOGIN_SUCCESS")
 
     def login(self, username: str, password: str) -> None:
@@ -465,6 +465,75 @@ class AppService:
             "GROUP BY c.id HAVING last_activity < ? ORDER BY last_activity", (cutoff,)).fetchall()
         self.audit("RETENTION_REVIEW", details={"years": years, "results": len(rows)})
         return [dict(r) for r in rows]
+
+    # ------------------------------------------------------------------
+    # Dashboard and security settings
+    # ------------------------------------------------------------------
+    def dashboard(self, active_days: int = 90) -> dict:
+        """Counts and short lists for the home screen (one audited view)."""
+        _, db = self._require()
+        since = (datetime.now(timezone.utc) - timedelta(days=active_days)).isoformat()
+        clients = [dict(r) for r in db.conn.execute(
+            "SELECT c.id, c.ref_code, c.last_name, c.first_name, c.flow, c.asrs_enabled, "
+            "MAX(c.updated_at, COALESCE(MAX(a.updated_at), ''), "
+            "    COALESCE(MAX(rv.created_at), '')) AS last_activity "
+            "FROM clients c LEFT JOIN assessments a ON a.client_id = c.id "
+            "LEFT JOIN report_versions rv ON rv.client_id = c.id "
+            "GROUP BY c.id ORDER BY last_activity DESC").fetchall()]
+        active = [c for c in clients if c["last_activity"] >= since]
+        entered = {}
+        for r in db.conn.execute("SELECT client_id, instrument FROM assessments"):
+            entered.setdefault(r["client_id"], set()).add(r["instrument"])
+        pending = []
+        for c in active:
+            expected = [i for i in instruments_for(c["flow"], bool(c["asrs_enabled"]))]
+            missing = [i.short for i in expected if i.key not in entered.get(c["id"], set())]
+            if missing:
+                pending.append({**c, "missing": missing, "expected": len(expected)})
+        reports = []
+        for r in db.conn.execute(
+                "SELECT rv.client_id, rv.version_no, rv.source, rv.created_at, rv.created_by, "
+                "rv.sections_json, c.ref_code, c.last_name, c.first_name "
+                "FROM report_versions rv JOIN clients c ON c.id = rv.client_id "
+                "WHERE rv.version_no = (SELECT MAX(version_no) FROM report_versions x "
+                "                       WHERE x.client_id = rv.client_id) "
+                "ORDER BY rv.created_at DESC LIMIT 10"):
+            d = dict(r)
+            d["draft"] = bool(report.placeholders_remaining(json.loads(d.pop("sections_json"))))
+            reports.append(d)
+        no_report = [c for c in active if c["id"] in entered and
+                     not any(r["client_id"] == c["id"] for r in reports)]
+        self.audit("DASHBOARD_VIEW", details={"active": len(active)})
+        return {"total_clients": len(clients), "active": active, "pending": pending,
+                "reports": reports, "drafts": [r for r in reports if r["draft"]],
+                "awaiting_report": no_report}
+
+    def idle_timeout_seconds(self) -> int:
+        _, db = self._require()
+        try:
+            minutes = int(db.get_setting("idle_timeout_min", "0"))
+        except ValueError:
+            minutes = 0
+        if minutes in config.IDLE_TIMEOUT_CHOICES_MIN:
+            return minutes * 60
+        return config.IDLE_TIMEOUT_SECONDS
+
+    def set_idle_timeout(self, minutes: int) -> None:
+        session, db = self._require()
+        if not session.is_admin:
+            raise PermissionError("admin role required")
+        if minutes not in config.IDLE_TIMEOUT_CHOICES_MIN:
+            raise ValueError("unsupported timeout")
+        db.set_setting("idle_timeout_min", str(minutes))
+        self.audit("SETTING_CHANGE", details={"idle_timeout_min": minutes})
+
+    def todays_interview(self, client_id: int) -> dict | None:
+        """The interview entry dated today, if any ("Start session" reopens it)."""
+        today = date.today().isoformat()
+        for a in self.list_assessments(client_id):
+            if a["instrument"] == "interview" and a["administered_on"] == today:
+                return a
+        return None
 
     def add_user(self, username: str, password: str, role: str) -> None:
         session, _ = self._require()

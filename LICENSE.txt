@@ -1,0 +1,64 @@
+CLINASSESS END USER LICENSE AGREEMENT
+Terms version: 2026-09-draft
+
+DRAFT FOR ATTORNEY REVIEW. This text is a starting template written by a
+software developer, not by a lawyer. Have it reviewed by an attorney
+licensed in your jurisdiction before you sell the software.
+
+1. LICENSE GRANT
+The publisher ("Publisher") grants you a non-exclusive, non-transferable,
+perpetual license to install and use ClinAssess ("Software") on computers
+owned or controlled by you or your practice, for the number of clinicians
+covered by your purchase.
+
+2. WHAT THE SOFTWARE IS AND IS NOT
+(a) The Software is a data-entry, scoring, and documentation aid for
+licensed or appropriately supervised health professionals.
+(b) The Software is not a medical device. It does not diagnose, treat,
+or recommend treatment. All results must be reviewed and interpreted by
+a qualified professional using professional judgment and the official
+manuals of each instrument.
+(c) The Software does not include, sell, or license any assessment
+instrument, item content, or normative data. You are responsible for
+obtaining every instrument, and every license required by its publisher,
+before you use it.
+
+3. YOUR DATA
+(a) All data you enter is stored only on your computer, encrypted. The
+Software contains no network features. The Publisher never receives,
+stores, or has access to your data and is not your business associate
+under HIPAA.
+(b) There is no password recovery. If you lose every administrator
+password and every archive password, your data cannot be recovered by
+anyone, including the Publisher.
+(c) You are responsible for backups, for your HIPAA risk analysis and
+policies, and for compliance with the laws and professional rules that
+apply to you.
+(d) Do not send protected health information to the Publisher, including
+in support requests or screenshots.
+
+4. RESTRICTIONS
+You may not resell, sublicense, or distribute the Software, or remove
+copyright or license notices. Third-party open-source components are
+licensed under their own terms (see THIRD_PARTY_NOTICES.txt); nothing in
+this agreement restricts your rights under those licenses, including
+the right to replace the LGPL-licensed Qt libraries.
+
+5. WARRANTY DISCLAIMER
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ACCURACY OF SCORING, AND NON-INFRINGEMENT, TO THE EXTENT PERMITTED BY LAW.
+
+6. LIMITATION OF LIABILITY
+TO THE EXTENT PERMITTED BY LAW, THE PUBLISHER'S TOTAL LIABILITY IS
+LIMITED TO THE AMOUNT YOU PAID FOR THE SOFTWARE. THE PUBLISHER IS NOT
+LIABLE FOR INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, OR FOR LOSS OF
+DATA, INCLUDING DATA LOST THROUGH FORGOTTEN PASSWORDS.
+
+7. REFUNDS
+Refunds follow the policy stated at the point of sale.
+
+8. GOVERNING LAW
+[State] law governs this agreement. [Attorney to complete.]
+
+Copyright 2026 [Publisher legal name]. All rights reserved.

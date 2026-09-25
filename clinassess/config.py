@@ -10,6 +10,16 @@ from pathlib import Path
 
 APP_NAME = "ClinAssess"
 APP_VERSION = "1.0.0"
+APP_TAGLINE = "Clinical assessment scoring and reporting"
+
+# ---------------------------------------------------------------------------
+# Publisher details (RELEASE CHECKLIST: set these before selling)
+# ---------------------------------------------------------------------------
+PUBLISHER = "[Publisher legal name]"
+COPYRIGHT = f"\u00a9 2026 {PUBLISHER}"
+SUPPORT_URL = ""      # e.g. your documentation site; empty = bundled docs only
+SUPPORT_EMAIL = ""    # never ask customers to email PHI
+EULA_VERSION = "2026-09-draft"
 
 # ---------------------------------------------------------------------------
 # Storage location
@@ -77,6 +87,7 @@ MIN_PASSWORD_LENGTH = 12
 MAX_FAILED_LOGINS = 5
 LOCKOUT_SECONDS = 300
 IDLE_TIMEOUT_SECONDS = 15 * 60  # automatic logoff, 45 CFR 164.312(a)(2)(iii)
+IDLE_TIMEOUT_CHOICES_MIN = (5, 10, 15, 20, 30)  # admin-adjustable in Preferences
 
 # ---------------------------------------------------------------------------
 # Retention
@@ -84,3 +95,9 @@ IDLE_TIMEOUT_SECONDS = 15 * 60  # automatic logoff, 45 CFR 164.312(a)(2)(iii)
 # Default retention review threshold in years. Adjust to your state's
 # record-retention law and your professional board's rules.
 DEFAULT_RETENTION_YEARS = 7
+
+
+def resource_path(relative: str) -> Path:
+    """Locate bundled files (docs, license) in source checkouts and in the .app."""
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+    return base / relative

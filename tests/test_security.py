@@ -145,3 +145,19 @@ def test_non_admin_restrictions(svc, home):
         svc.read_audit()
     with pytest.raises(PermissionError):
         svc.export_archive(home / "x.caarchive", "Archive-Pass-2026")
+
+
+def test_dashboard_and_settings(svc, client_a):
+    d = svc.dashboard()
+    assert d["total_clients"] == 1 and len(d["active"]) == 1
+    assert d["pending"][0]["missing"][0] == "Interview"
+    svc.save_assessment(client_a, "sdq", "parent", "2026-09-02", {"item1": 1})
+    assert len(svc.dashboard()["awaiting_report"]) == 1
+    svc.open_report(client_a)
+    d = svc.dashboard()
+    assert d["drafts"] and not d["awaiting_report"]
+    assert svc.idle_timeout_seconds() == 15 * 60
+    svc.set_idle_timeout(5)
+    assert svc.idle_timeout_seconds() == 300
+    with pytest.raises(ValueError):
+        svc.set_idle_timeout(240)

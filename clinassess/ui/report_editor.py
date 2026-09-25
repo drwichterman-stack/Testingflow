@@ -17,20 +17,54 @@ from PySide6.QtWidgets import (QDialog, QFileDialog, QFormLayout, QHBoxLayout, Q
 
 from .. import config, report
 from .common import PasswordDialog, confirm, error, info, wrap_label
+from .dictate import DictateButton
+from .theme import html_table_css, set_role
+
+
+def export_pdf_flow(parent, service, client_id: int) -> bool:
+    """Ask for a PDF password and location, then write the encrypted PDF."""
+    rep = service.latest_report(client_id)
+    client = service.get_client(client_id, log=False)
+    left = report.placeholders_remaining(rep["sections"])
+    if left and not confirm(parent, f"{len(left)} section(s) still contain '[Clinician to "
+                                    "complete' prompts. Export anyway?"):
+        return False
+    dlg = PasswordDialog(
+        parent, "Encrypt PDF",
+        "The PDF is encrypted with AES-256 and printing is disabled. Choose a password to open "
+        "it. Give the password to the recipient separately (for example, by phone), never in "
+        "the same email as the file.")
+    if not dlg.exec():
+        return False
+    default = config.reports_dir() / (
+        f"{client['ref_code']}_report_v{rep['version_no']}_{date.today().isoformat()}.pdf")
+    path, _ = QFileDialog.getSaveFileName(parent, "Save encrypted PDF", str(default),
+                                          "PDF (*.pdf)")
+    if not path:
+        return False
+    try:
+        service.export_report_pdf(client_id, Path(path), dlg.password())
+    except (ValueError, OSError) as exc:
+        error(parent, f"PDF not created: {exc}")
+        return False
+    info(parent, f"\u2713  Encrypted PDF saved (AES-256, printing disabled):\n{path}\n\n"
+                 "The file name uses the client reference code, so the name does not reveal "
+                 "PHI.")
+    return True
 
 
 class ReportEditor(QDialog):
-    def __init__(self, parent, service, client_id: int):
+    def __init__(self, parent, service, client_id: int, toast=None):
         super().__init__(parent)
         self.service = service
         self.client_id = client_id
+        self.toast = toast or (lambda *a, **k: None)
         self.client = service.get_client(client_id, log=False)
         self.resize(1150, 800)
         self.setWindowTitle(f"Report: {self.client['first_name']} {self.client['last_name']}")
 
         self.status = QLabel()
-        self.banner = wrap_label("")
-        self.banner.setStyleSheet("background:#fff4d6; color:#5a4300; padding:6px;")
+        self.banner = set_role(wrap_label(""), "banner-warn")
         self.sections_list = QListWidget()
         self.sections_list.setMaximumWidth(300)
         self.stack = QStackedWidget()
@@ -41,11 +75,21 @@ class ReportEditor(QDialog):
         body.addWidget(self.stack, 1)
 
         buttons = QHBoxLayout()
-        for text, slot in (("Save version", self.save), ("Revert to auto-generated", self.revert),
-                           ("Version history", self.history),
-                           ("Generate PDF", self.export_pdf), ("Close", self.close_editor)):
+        for text, slot, role, tip in (
+                ("Save version", self.save, "primary",
+                 "Save all sections as a new version (the previous version is kept)"),
+                ("Revert to auto-generated", self.revert, "",
+                 "Rebuild the draft from current scores; edited versions stay in history"),
+                ("Version history", self.history, "", "Who saved each version, and when"),
+                ("\U0001F512  Export PDF", self.export_pdf, "",
+                 "AES-256 encrypted PDF with page headers and signature block"),
+                ("Close", self.close_editor, "", "")):
             b = QPushButton(text)
             b.clicked.connect(slot)
+            if role:
+                set_role(b, role)
+            if tip:
+                b.setToolTip(tip)
             buttons.addWidget(b)
 
         lay = QVBoxLayout(self)
@@ -93,8 +137,12 @@ class ReportEditor(QDialog):
                 v.addWidget(QLabel("Interpretation (editable):"))
             ed = QPlainTextEdit(rep["sections"].get(key, ""))
             v.addWidget(ed, 1)
-            v.addWidget(QLabel("Formatting: blank line = new paragraph; '- ' = bullet; a short "
-                               "line ending in ':' = subheading."))
+            foot = QHBoxLayout()
+            foot.addWidget(set_role(QLabel("Formatting: blank line = new paragraph; '- ' = "
+                                           "bullet; a short line ending in ':' = subheading."),
+                                    "muted"), 1)
+            foot.addWidget(DictateButton(ed))
+            v.addLayout(foot)
             self.editors[key] = ed
             short = (f"Results: {report.INSTRUMENTS[key.split(':', 1)[1]].short}"
                      if key.startswith("results:") else title)
@@ -119,7 +167,7 @@ class ReportEditor(QDialog):
 
     @staticmethod
     def _score_html(entries: list[dict]) -> str:
-        out = []
+        out = [html_table_css()]
         for a in entries:
             s = a["scores"]
             out.append(f"<p><b>{escape(report.variant_label(a['instrument'], a['variant']))}, "
@@ -129,7 +177,7 @@ class ReportEditor(QDialog):
                 out.append(f"<tr><td>{escape(r.section)}</td><td>{escape(r.label)}</td>"
                            f"<td>{escape(r.value[:200])}</td><td>{escape(r.band)}</td></tr>")
             out.append("</table>")
-        return "".join(out) or "<p>No entries.</p>"
+        return "".join(out) if len(out) > 1 else "<p>No entries.</p>"
 
     def _update_status(self):
         r = self.rep
@@ -160,16 +208,18 @@ class ReportEditor(QDialog):
         if not self.is_dirty():
             info(self, "No changes to save.")
             return True
-        self.service.save_report(self.client_id, self.current_sections(), source="edited")
+        v = self.service.save_report(self.client_id, self.current_sections(), source="edited")
         self.load(self.service.latest_report(self.client_id))
+        self.toast(f"Report version {v} saved (encrypted)")
         return True
 
     def revert(self):
         if not confirm(self, "Replace the text with a fresh auto-generated draft from the current "
                              "scores? Your edited versions stay in the version history."):
             return
-        self.service.revert_report_to_auto(self.client_id)
+        v = self.service.revert_report_to_auto(self.client_id)
         self.load(self.service.latest_report(self.client_id))
+        self.toast(f"Auto-generated text restored as version {v}")
 
     def history(self):
         rows = self.service.report_history(self.client_id)
@@ -180,32 +230,11 @@ class ReportEditor(QDialog):
 
     def export_pdf(self):
         if self.is_dirty():
-            if not confirm(self, "Save your edits as a new version before generating the PDF?"):
+            if not confirm(self, "Save your edits as a new version before exporting?"):
                 return
             self.save()
-        left = report.placeholders_remaining(self.rep["sections"])
-        if left and not confirm(self, f"{len(left)} section(s) still contain '[Clinician to "
-                                      "complete' prompts. Generate the PDF anyway?"):
-            return
-        dlg = PasswordDialog(
-            self, "Encrypt PDF",
-            "The PDF is encrypted with AES-256 and printing is disabled. Choose a password to "
-            "open it. Give the password to the recipient by a separate channel (for example, "
-            "by phone), never in the same email as the file.")
-        if not dlg.exec():
-            return
-        default = config.reports_dir() / (
-            f"{self.client['ref_code']}_report_{date.today().isoformat()}.pdf")
-        path, _ = QFileDialog.getSaveFileName(self, "Save encrypted PDF", str(default),
-                                              "PDF (*.pdf)")
-        if not path:
-            return
-        try:
-            self.service.export_report_pdf(self.client_id, Path(path), dlg.password())
-        except (ValueError, OSError) as exc:
-            return error(self, f"PDF not created: {exc}")
-        info(self, f"Encrypted PDF saved:\n{path}\n\nThe file name uses the client reference "
-                   "code, not the name, so PHI is not exposed in file listings.")
+        if export_pdf_flow(self, self.service, self.client_id):
+            self.toast("Encrypted PDF exported")
 
     def close_editor(self):
         if self.is_dirty() and confirm(self, "Save your edits as a new version before closing?"):

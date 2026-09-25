@@ -72,8 +72,8 @@ CUTOFFS = {
 }
 
 VARIANTS = [
-    ("parent", "Parent report (P4-10, or P/T 11-17 completed by parent)"),
-    ("teacher", "Teacher report (T4-10, or P/T 11-17 completed by teacher)"),
+    ("parent", "Parent (P4-10 or P/T 11-17)"),
+    ("teacher", "Teacher (T4-10 or P/T 11-17)"),
     ("self", "Self-report (S11-17)"),
 ]
 

@@ -7,12 +7,54 @@ from html import escape
 from PySide6.QtCore import QDate, Qt, QTimer
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import (QComboBox, QDateEdit, QDialog, QDialogButtonBox, QFormLayout,
-                             QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
-                             QScrollArea, QSplitter, QTextBrowser, QVBoxLayout, QWidget)
+                               QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
+                               QPushButton, QScrollArea, QSplitter, QTextBrowser, QVBoxLayout,
+                               QWidget)
 
 from ..scoring import INSTRUMENTS
 from ..scoring.base import Field
 from .common import error
+from .dictate import DictateButton
+from .theme import html_table_css, set_role
+
+
+class SegmentedChoice(QWidget):
+    """One-click response buttons. Clicking the selected button clears it."""
+
+    def __init__(self, options: list[tuple[int, str]], value, on_change, compact: bool):
+        super().__init__()
+        self._value = None
+        self._on_change = on_change
+        self.buttons: dict[int, QPushButton] = {}
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(4)
+        for code, label in options:
+            text = ("N/A" if code < 0 else str(code)) if compact else \
+                (label if code < 0 else f"{code}  {label}")
+            b = QPushButton(text)
+            b.setCheckable(True)
+            b.setToolTip(label)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setMinimumWidth(52 if compact else 0)
+            b.clicked.connect(lambda _=False, c=code: self._clicked(c))
+            set_role(b, "seg")
+            self.buttons[code] = b
+            lay.addWidget(b)
+        lay.addStretch(1)
+        self.setValue(value)
+
+    def _clicked(self, code):
+        self.setValue(None if self._value == code else code)
+        self._on_change()
+
+    def setValue(self, value):
+        self._value = value if value in self.buttons else None
+        for c, b in self.buttons.items():
+            b.setChecked(c == self._value)
+
+    def value(self):
+        return self._value
 
 
 class AssessmentDialog(QDialog):
@@ -60,6 +102,9 @@ class AssessmentDialog(QDialog):
         lay.addWidget(split, 1)
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Save |
                               QDialogButtonBox.StandardButton.Cancel)
+        save = bb.button(QDialogButtonBox.StandardButton.Save)
+        save.setText("\U0001F512  Save (encrypted)")
+        set_role(save, "primary")
         bb.accepted.connect(self._save)
         bb.rejected.connect(self.reject)
         lay.addWidget(bb)
@@ -77,14 +122,8 @@ class AssessmentDialog(QDialog):
     def _make_widget(self, f: Field) -> QWidget:
         v = self.values.get(f.key)
         if f.kind == "choice":
-            w = QComboBox()
-            w.addItem("", None)
-            for code, label in f.options:
-                w.addItem(label if code < 0 else f"{code}: {label}", code)
-            if v is not None:
-                idx = w.findData(v)
-                w.setCurrentIndex(max(idx, 0))
-            w.currentIndexChanged.connect(self._timer.start)
+            compact = sum(len(lbl) for _, lbl in f.options) > 48
+            w = SegmentedChoice(f.options, v, self._timer.start, compact)
         elif f.kind == "text":
             w = QPlainTextEdit(v or "")
             w.setMinimumHeight(70)
@@ -113,10 +152,26 @@ class AssessmentDialog(QDialog):
             if f.section not in groups:
                 box = QGroupBox(f.section or "Responses")
                 groups[f.section] = QFormLayout(box)
+                groups[f.section].setVerticalSpacing(8)
+                if f.kind == "choice" and sum(len(lbl) for _, lbl in f.options) > 48:
+                    legend = QLabel("   ".join(("N/A" if c < 0 else str(c)) + " = " + lbl
+                                               for c, lbl in f.options))
+                    legend.setWordWrap(True)
+                    groups[f.section].addRow(set_role(legend, "muted"))
                 outer.addWidget(box)
             w = self._make_widget(f)
             self.widgets[f.key] = w
-            groups[f.section].addRow(f.label + ":", w)
+            row_w = w
+            if f.kind == "text":
+                row_w = QWidget()
+                v = QVBoxLayout(row_w)
+                v.setContentsMargins(0, 0, 0, 0)
+                v.addWidget(w)
+                h = QHBoxLayout()
+                h.addStretch(1)
+                h.addWidget(DictateButton(w))
+                v.addLayout(h)
+            groups[f.section].addRow(f.label + ":", row_w)
         outer.addStretch(1)
         self.scroll.setWidget(container)
         self._refresh_preview()
@@ -125,7 +180,9 @@ class AssessmentDialog(QDialog):
         fields = {f.key: f for f in self.inst.fields_for(self._variant())} if self.widgets else {}
         for key, w in self.widgets.items():
             f = fields.get(key)
-            if isinstance(w, QComboBox):
+            if isinstance(w, SegmentedChoice):
+                val = w.value()
+            elif isinstance(w, QComboBox):
                 val = w.currentData()
             elif isinstance(w, QPlainTextEdit):
                 val = w.toPlainText()
@@ -151,11 +208,12 @@ class AssessmentDialog(QDialog):
             res = self.service.score_preview(self.client["id"], self.inst.key, self._variant(),
                                              responses, self.date.date().toString("yyyy-MM-dd"))
         except ValueError as exc:
-            self.preview.setHtml(f"<p style='color:#b00'><b>Entry problems:</b><br>"
+            self.preview.setHtml(f"{html_table_css()}<p class='danger'>Entry problems:<br>"
                                  f"{escape(str(exc)).replace('; ', '<br>')}</p>")
             return
-        html = [f"<h3>Score preview</h3><p><i>Status: {res.verification}</i></p>",
-                "<table border='1' cellspacing='0' cellpadding='3'>",
+        html = [html_table_css(), "<h3>Live score</h3>",
+                f"<p class='muted'>Scoring status: {res.verification}</p>",
+                "<table cellspacing='0' cellpadding='3'>",
                 "<tr><th>Domain</th><th>Scale</th><th>Score</th><th>Classification</th></tr>"]
         for r in res.rows:
             val = escape(r.value[:300]) + (f" <small>({escape(r.note)})</small>" if r.note else "")
@@ -163,7 +221,8 @@ class AssessmentDialog(QDialog):
                         f"<td>{val}</td><td>{escape(r.band)}</td></tr>")
         html.append("</table>")
         for w in res.warnings:
-            html.append(f"<p style='color:#8a5a00'>{escape(w)}</p>")
+            cls = "danger" if w.startswith("SAFETY") else "warn"
+            html.append(f"<p class='{cls}'>{escape(w)}</p>")
         self.preview.setHtml("".join(html))
 
     def _save(self):

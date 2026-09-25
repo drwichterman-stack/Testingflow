@@ -1,20 +1,27 @@
-"""Application entry point: setup, login, idle auto-lock, and error handling."""
+"""Application entry point: splash, setup, login, idle auto-lock, errors."""
 
 from __future__ import annotations
 
 import sys
+import time
 
 from PySide6.QtCore import QEvent, QObject, QTimer
 from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 from .. import config
+from .. import prefs as prefs_mod
 from ..service import AppService, NotLoggedIn
+from . import theme
+from .branding import app_icon, splash
+from .help import GettingStartedDialog
 from .login import LoginDialog, SetupDialog
 from .main_window import MainWindow
 
+SPLASH_SECONDS = 1.2
+
 
 class IdleWatcher(QObject):
-    """Resets the idle timer on any keyboard or mouse input."""
+    """Restarts the idle timer on any keyboard or mouse input."""
 
     EVENTS = {QEvent.Type.KeyPress, QEvent.Type.MouseButtonPress, QEvent.Type.MouseMove,
               QEvent.Type.Wheel}
@@ -34,7 +41,7 @@ class Controller:
         self.app = app
         self.service = AppService()
         self.window: MainWindow | None = None
-        self.idle = QTimer(interval=config.IDLE_TIMEOUT_SECONDS * 1000, singleShot=True)
+        self.idle = QTimer(singleShot=True)
         self.idle.timeout.connect(lambda: self.lock("AUTO_LOCK"))
         self.watcher = IdleWatcher(self.idle)
         app.installEventFilter(self.watcher)
@@ -46,20 +53,33 @@ class Controller:
                 return False
         elif not LoginDialog(self.service).exec():
             return False
-        self._show_main()
+        self._show_main(first=True)
         return True
 
-    def _show_main(self):
+    def _show_main(self, first: bool = False):
         if self.window is None:
-            self.window = MainWindow(self.service, self.lock)
-        self.window.refresh_title()
+            self.window = MainWindow(self.service, self.lock, self.reapply_theme)
+        self.window.start()
         self.window.show()
-        self.window.search()
+        self.idle.setInterval(self.service.idle_timeout_seconds() * 1000)
         self.idle.start()
+        if first and prefs_mod.load()["show_getting_started"]:
+            QTimer.singleShot(300, lambda: self.window and
+                              GettingStartedDialog(self.window).exec())
+
+    def reapply_theme(self):
+        theme.apply(self.app)
+        if self.service.session is not None:
+            self.idle.setInterval(self.service.idle_timeout_seconds() * 1000)
+            self.idle.start()
+        if self.window is not None:
+            self.window.go_dashboard()
 
     def lock(self, reason: str = "LOGOUT", quit_app: bool = False):
         """Log out: close open dialogs, clear the screen, drop keys, re-prompt."""
         if self._locking or self.service.session is None:
+            if quit_app:
+                self.app.quit()
             return
         self._locking = True
         self.idle.stop()
@@ -99,16 +119,29 @@ def _install_excepthook(controller: Controller):
             pass
         QMessageBox.critical(None, "Unexpected error",
                              f"An unexpected error occurred ({exc_type.__name__}). Your last "
-                             "saved data is safe. If this repeats, contact support.")
+                             "saved data is safe. If this repeats, contact support. Never "
+                             "send client data to support.")
     sys.excepthook = hook
 
 
 def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName(config.APP_NAME)
+    app.setApplicationVersion(config.APP_VERSION)
+    app.setWindowIcon(app_icon())
     app.setQuitOnLastWindowClosed(False)
+    theme.apply(app)
+
+    sp = splash()
+    sp.show()
+    deadline = time.monotonic() + SPLASH_SECONDS
+    while time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(0.02)
     controller = Controller(app)
     _install_excepthook(controller)
+    sp.close()
+
     if not controller.start():
         return 0
     code = app.exec()
