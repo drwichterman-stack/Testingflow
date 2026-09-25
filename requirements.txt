@@ -1,0 +1,5 @@
+# Pinned minimum versions. Install into a virtual environment (see README).
+PyQt6>=6.6
+cryptography>=42.0
+reportlab>=4.0
+pypdf>=4.0

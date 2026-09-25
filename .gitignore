@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+.pytest_cache/
+*.db.enc
+*.caarchive
+*.log.enc
+keystore.json
