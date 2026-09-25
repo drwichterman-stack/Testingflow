@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:testingflow:schema:course",
+  "title": "Course",
+  "description": "Course with nested lessons and quizzes. Other entities are under $defs (e.g. #/$defs/UserProgress). Cross-field rules JSON Schema cannot express are listed in README.md.",
+  "$ref": "#/$defs/Course",
+  "$defs": {
+    "UUID": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "ISOTimestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Percentage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "NonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "Course": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description", "totalLessons", "totalQuizzes", "progressPercentage", "lessons", "quizzes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "totalLessons": { "$ref": "#/$defs/NonNegativeInteger", "description": "Derived: lessons.length." },
+        "totalQuizzes": { "$ref": "#/$defs/NonNegativeInteger", "description": "Derived: quizzes.length." },
+        "progressPercentage": { "$ref": "#/$defs/Percentage", "description": "Derived for the current user." },
+        "lessons": { "type": "array", "items": { "$ref": "#/$defs/Lesson" } },
+        "quizzes": { "type": "array", "items": { "$ref": "#/$defs/Quiz" } }
+      }
+    },
+    "Lesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "unitId", "title", "content", "order", "completed", "estimatedTime"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "unitId": { "$ref": "#/$defs/UUID", "description": "Foreign key to Course.id." },
+        "title": { "type": "string", "minLength": 1 },
+        "content": { "type": "string", "description": "HTML or Markdown." },
+        "order": { "$ref": "#/$defs/NonNegativeInteger" },
+        "completed": { "type": "boolean", "description": "Derived for the current user." },
+        "estimatedTime": { "$ref": "#/$defs/NonNegativeInteger", "description": "Minutes." }
+      }
+    },
+    "Quiz": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "unitId", "title", "questions", "timeLimit", "passingScore", "order"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "unitId": { "$ref": "#/$defs/UUID", "description": "Foreign key to Course.id." },
+        "title": { "type": "string", "minLength": 1 },
+        "questions": { "type": "array", "items": { "$ref": "#/$defs/Question" } },
+        "timeLimit": {
+          "description": "Seconds; null means no limit.",
+          "oneOf": [{ "type": "integer", "exclusiveMinimum": 0 }, { "type": "null" }]
+        },
+        "passingScore": { "$ref": "#/$defs/Percentage" },
+        "order": { "$ref": "#/$defs/NonNegativeInteger" }
+      }
+    },
+    "Question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "quizId", "text", "questionType", "options", "correctAnswerId", "explanation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "quizId": { "$ref": "#/$defs/UUID", "description": "Foreign key to Quiz.id." },
+        "text": { "type": "string", "minLength": 1 },
+        "questionType": { "enum": ["multiple_choice", "true_false"] },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/QuestionOption" }
+        },
+        "correctAnswerId": { "$ref": "#/$defs/UUID", "description": "Must equal the id of one of this question's options." },
+        "explanation": { "type": "string" }
+      },
+      "if": { "properties": { "questionType": { "const": "true_false" } } },
+      "then": {
+        "properties": {
+          "options": {
+            "maxItems": 2,
+            "items": { "properties": { "order": { "maximum": 1 } } }
+          }
+        }
+      }
+    },
+    "QuestionOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "questionId", "text", "order"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "questionId": { "$ref": "#/$defs/UUID", "description": "Foreign key to Question.id." },
+        "text": { "type": "string", "minLength": 1 },
+        "order": { "type": "integer", "minimum": 0, "maximum": 3, "description": "A=0, B=1, C=2, D=3." }
+      }
+    },
+    "UserProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["userId", "courseId", "lessonsCompleted", "quizAttempts", "totalStudyTime", "lastAccessedAt"],
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "description": "Local device ID, not cloud-based." },
+        "courseId": { "$ref": "#/$defs/UUID" },
+        "lessonsCompleted": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/UUID" } },
+        "quizAttempts": { "type": "array", "items": { "$ref": "#/$defs/QuizAttempt" } },
+        "totalStudyTime": { "$ref": "#/$defs/NonNegativeInteger", "description": "Seconds." },
+        "lastAccessedAt": { "$ref": "#/$defs/ISOTimestamp" }
+      }
+    },
+    "QuizAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["questionId", "selectedOptionId"],
+      "properties": {
+        "questionId": { "$ref": "#/$defs/UUID" },
+        "selectedOptionId": { "$ref": "#/$defs/UUID" }
+      }
+    },
+    "QuizAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "quizId", "answers", "score", "isPassing", "completedAt", "timeSpent"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UUID" },
+        "quizId": { "$ref": "#/$defs/UUID" },
+        "answers": { "type": "array", "items": { "$ref": "#/$defs/QuizAnswer" } },
+        "score": { "$ref": "#/$defs/Percentage" },
+        "isPassing": { "type": "boolean" },
+        "completedAt": { "$ref": "#/$defs/ISOTimestamp" },
+        "timeSpent": { "$ref": "#/$defs/NonNegativeInteger", "description": "Seconds." }
+      }
+    }
+  }
+}
