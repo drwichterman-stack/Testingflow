@@ -1,5 +1,5 @@
 # Pinned minimum versions. Install into a virtual environment (see README).
-PyQt6>=6.6
+PySide6>=6.6  # LGPL v3 (Qt for Python); permits closed-source commercial use
 cryptography>=42.0
 reportlab>=4.0
 pypdf>=4.0

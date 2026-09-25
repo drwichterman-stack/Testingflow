@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from PyQt6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
+from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
                              QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget,
                              QPushButton, QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout)
 

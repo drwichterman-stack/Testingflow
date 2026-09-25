@@ -11,7 +11,7 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from PyQt6.QtWidgets import (QDialog, QFileDialog, QFormLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QDialog, QFileDialog, QFormLayout, QHBoxLayout, QLabel,
                              QLineEdit, QListWidget, QListWidgetItem, QPlainTextEdit,
                              QPushButton, QStackedWidget, QTextBrowser, QVBoxLayout, QWidget)
 

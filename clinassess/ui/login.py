@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLabel, QLineEdit,
+from PySide6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLabel, QLineEdit,
                              QVBoxLayout)
 
 from .. import config

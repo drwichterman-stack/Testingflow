@@ -15,8 +15,10 @@ Rules implemented:
     (0 to 40), scored only if all four are available.
   * Externalising = Conduct + Hyperactivity; Internalising = Emotional + Peer.
   * Impact supplement: scored only if the respondent reports a difficulty.
-    "Not at all" and "Only a little" = 0, "Quite a lot" = 1,
-    "A great deal" = 2.
+    "Not at all" and "Only a little" = 0, "A medium amount" (US) or
+    "Quite a lot" (UK) = 1, "A great deal" = 2.
+  * Item order and reverse-keyed items verified against the US English
+    P4-10 and P/T 11-17 forms (copyright Robert Goodman, 2005).
   * Bands: the original three-band categorisation (Normal / Borderline /
     Abnormal) from sdqinfo.org, separate for parent, teacher, and self.
 """
@@ -70,15 +72,19 @@ CUTOFFS = {
 }
 
 VARIANTS = [
-    ("parent", "Parent report (P4-17)"),
-    ("teacher", "Teacher report (T4-17)"),
+    ("parent", "Parent report (P4-10, or P/T 11-17 completed by parent)"),
+    ("teacher", "Teacher report (T4-10, or P/T 11-17 completed by teacher)"),
     ("self", "Self-report (S11-17)"),
 ]
 
 DIFFICULTY_OPTIONS = [(0, "No"), (1, "Yes, minor difficulties"),
                       (2, "Yes, definite difficulties"), (3, "Yes, severe difficulties")]
-IMPACT_OPTIONS = [(0, "Not at all"), (1, "Only a little"), (2, "Quite a lot"),
-                  (3, "A great deal")]
+# US English forms print "A medium amount"; UK forms print "Quite a lot".
+# Both occupy the third position and score 1.
+IMPACT_OPTIONS = [(0, "Not at all"), (1, "Only a little"),
+                  (2, "A medium amount / Quite a lot"), (3, "A great deal")]
+CHRONICITY_OPTIONS = [(0, "Less than a month"), (1, "1-5 months"), (2, "6-12 months"),
+                      (3, "Over a year")]
 IMPACT_ITEMS = {
     "parent": [("imp_distress", "Distress"), ("imp_home", "Interferes: home life"),
                ("imp_friends", "Interferes: friendships"),
@@ -100,6 +106,8 @@ def fields_for(variant: str) -> list[Field]:
               for i in range(1, 26)]
     fields.append(Field("difficulties", "Overall: any difficulties?", "choice",
                         DIFFICULTY_OPTIONS, section="Impact supplement (optional)"))
+    fields.append(Field("chronicity", "How long present (not scored)", "choice",
+                        CHRONICITY_OPTIONS, section="Impact supplement (optional)"))
     for key, label in IMPACT_ITEMS.get(variant, []):
         fields.append(Field(key, label, "choice", IMPACT_OPTIONS,
                             section="Impact supplement (optional)"))

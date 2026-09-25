@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
-from . import asrs, cats, interview, licensed, sdq, wsr2
+from . import asrs, cats, interview, licensed, sdq, snap4, wsr2
 from .base import Instrument, ScoreResult, validate  # noqa: F401
 
 # Display order within each flow follows the specification.
 FLOW_ORDER = {
-    "A": ["interview", "sdq", "cats", "conners4", "tova", "wsr2", "asrs"],
-    "B": ["interview", "mmpi3", "brown", "wsr2", "asrs", "tova"],
+    "A": ["interview", "sdq", "cats", "conners4", "snap4", "tova", "wsr2", "wfirs_p", "asrs"],
+    "B": ["interview", "mmpi3", "brown", "wsr2", "wfirs_s", "asrs", "tova"],
 }
 FLOW_LABELS = {"A": "Flow A: Children/Adolescents (6+)",
                "B": "Flow B: Adolescents/Adults"}
 
 INSTRUMENTS: dict[str, Instrument] = {
     i.key: i for i in [interview.INSTRUMENT, sdq.INSTRUMENT, cats.INSTRUMENT,
-                       licensed.CONNERS4, licensed.TOVA, wsr2.INSTRUMENT,
-                       asrs.INSTRUMENT, licensed.MMPI3, licensed.BROWN]
+                       licensed.CONNERS4, snap4.INSTRUMENT, licensed.TOVA, wsr2.WSR2,
+                       wsr2.WFIRS_P, wsr2.WFIRS_S, asrs.INSTRUMENT, licensed.MMPI3,
+                       licensed.BROWN]
 }
 
 

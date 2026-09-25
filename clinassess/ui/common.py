@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLabel, QLineEdit,
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLabel, QLineEdit,
                              QMessageBox, QPlainTextEdit, QVBoxLayout, QWidget)
 
 from ..keystore import validate_password

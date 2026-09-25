@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
                              QMainWindow, QMenu, QPushButton, QSplitter, QTableWidget,
                              QTableWidgetItem, QToolButton, QVBoxLayout, QWidget)
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QDate
-from PyQt6.QtWidgets import (QCheckBox, QComboBox, QDateEdit, QDialog, QDialogButtonBox,
+from PySide6.QtCore import QDate
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QDateEdit, QDialog, QDialogButtonBox,
                              QFormLayout, QLabel, QLineEdit, QVBoxLayout)
 
 from ..scoring import FLOW_LABELS

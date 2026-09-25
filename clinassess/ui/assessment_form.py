@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from html import escape
 
-from PyQt6.QtCore import QDate, Qt, QTimer
-from PyQt6.QtGui import QDoubleValidator, QIntValidator
-from PyQt6.QtWidgets import (QComboBox, QDateEdit, QDialog, QDialogButtonBox, QFormLayout,
+from PySide6.QtCore import QDate, Qt, QTimer
+from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtWidgets import (QComboBox, QDateEdit, QDialog, QDialogButtonBox, QFormLayout,
                              QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
                              QScrollArea, QSplitter, QTextBrowser, QVBoxLayout, QWidget)
 
@@ -80,7 +80,7 @@ class AssessmentDialog(QDialog):
             w = QComboBox()
             w.addItem("", None)
             for code, label in f.options:
-                w.addItem(f"{code}: {label}", code)
+                w.addItem(label if code < 0 else f"{code}: {label}", code)
             if v is not None:
                 idx = w.findData(v)
                 w.setCurrentIndex(max(idx, 0))

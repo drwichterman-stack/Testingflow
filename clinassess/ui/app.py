@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import sys
 
-from PyQt6.QtCore import QEvent, QObject, QTimer
-from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
+from PySide6.QtCore import QEvent, QObject, QTimer
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 from .. import config
 from ..service import AppService, NotLoggedIn

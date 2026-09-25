@@ -5,7 +5,8 @@ Organization; Harvard Medical School National Comorbidity Survey).
 
 Rules implemented:
   * 18 items, coded 0 Never, 1 Rarely, 2 Sometimes, 3 Often, 4 Very Often.
-  * An item is "shaded" (counted) when it reaches its threshold:
+  * An item is "shaded" (counted) when it reaches its threshold. Verified
+    box by box against the shaded cells of the official WHO checklist:
       Sometimes or higher: items 1, 2, 3, 9, 12, 16, 18
       Often or higher:     items 4, 5, 6, 7, 8, 10, 11, 13, 14, 15, 17
   * Part A screener (items 1 to 6): 4 or more shaded = symptoms highly
@@ -23,7 +24,7 @@ decision; Flow A shows this measure only when enabled for the client.
 
 from __future__ import annotations
 
-from .base import VERIFY, Field, Instrument, ScoreResult, ScoreRow
+from .base import PUBLISHED, Field, Instrument, ScoreResult, ScoreRow
 
 RESPONSES = [(0, "Never"), (1, "Rarely"), (2, "Sometimes"), (3, "Often"), (4, "Very Often")]
 THRESHOLD_SOMETIMES = {1, 2, 3, 9, 12, 16, 18}
@@ -43,7 +44,7 @@ def fields_for(variant: str) -> list[Field]:
 
 
 def score(variant: str, responses: dict, context: dict) -> ScoreResult:
-    res = ScoreResult(verification=VERIFY)
+    res = ScoreResult(verification=PUBLISHED)
     r = {i: responses.get(f"item{i}") for i in range(1, 19)}
     missing = [i for i, v in r.items() if v in (None, "")]
     if missing:
@@ -85,7 +86,7 @@ def score(variant: str, responses: dict, context: dict) -> ScoreResult:
 
 INSTRUMENT = Instrument(
     key="asrs", name="Adult ADHD Self-Report Scale v1.1", short="ASRS v1.1",
-    flows=("A", "B"), version="asrs-1.1-1", verification=VERIFY,
+    flows=("A", "B"), version="asrs-1.1-2", verification=PUBLISHED,
     variants=[("self", "Self-report")], fields_for=fields_for, score=score,
     description="18 items. Part A (1-6) is the screener; Part B (7-18) adds detail.",
     gated=True,
