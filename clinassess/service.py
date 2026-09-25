@@ -67,8 +67,14 @@ class AppService:
         self.audit("LOGIN_SUCCESS")
 
     def _open(self, session: Session) -> None:
+        try:
+            db = EncryptedDatabase(session.dek, self._db_path)
+        except crypto.DecryptionError:
+            self.audit_log.append(session.username, "DB_INTEGRITY_FAILURE",
+                                  details={"file": "clinassess.db.enc"})
+            raise
         self.session = session
-        self.db = EncryptedDatabase(session.dek, self._db_path)
+        self.db = db
 
     def logout(self, reason: str = "LOGOUT") -> None:
         if self.session is None:

@@ -1,0 +1,35 @@
+CLINASSESS THIRD-PARTY NOTICES
+
+ClinAssess includes the open-source components listed below. Each is
+licensed under its own terms. The full license text of each component
+is appended to this file by the build script (build_macos.sh).
+
+Component                         License
+--------------------------------  ------------------------------------
+Qt 6 / Qt for Python (PySide6)    GNU Lesser General Public License v3
+shiboken6                         GNU Lesser General Public License v3
+cryptography                      Apache License 2.0 or BSD 3-Clause
+OpenSSL (via cryptography)        Apache License 2.0
+ReportLab                         BSD 3-Clause
+pypdf                             BSD 3-Clause
+PyObjC (macOS only)               MIT
+Python                            Python Software Foundation License
+
+LGPL NOTICE (Qt / PySide6)
+The Qt and PySide6 libraries are used unmodified and are included as
+separate, dynamically loaded libraries inside ClinAssess.app
+(Contents/Frameworks and Contents/Resources). You may replace them with
+a compatible version of your choosing. The source code of these
+libraries is available from https://download.qt.io and
+https://code.qt.io. On request, the publisher will provide the object
+files and build scripts needed to relink ClinAssess against a modified
+version of these libraries.
+
+ASSESSMENT INSTRUMENTS
+ClinAssess does not include, sell, or license any assessment instrument.
+Instrument names are used only to identify the data being entered and
+belong to their owners: SDQ (Robert Goodman / Youth in Mind); ASRS v1.1
+(World Health Organization); CATS (CATS Consortium); WSR-II and WFIRS
+(Margaret D. Weiss); SNAP-IV (James M. Swanson); MMPI-3 (University of
+Minnesota Press); Conners 4 (Multi-Health Systems); Brown EF/A Scales
+(Pearson); T.O.V.A. (The TOVA Company).

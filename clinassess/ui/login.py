@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QCheckBox, QDialog, QFormLayout, QHBoxLayout, QLa
                                QPushButton, QTextBrowser, QVBoxLayout)
 
 from .. import config
+from ..crypto import DecryptionError
 from ..keystore import AuthError, LockedOutError, validate_password, validate_username
 from .branding import logo_pixmap
 from .common import error
@@ -147,6 +148,13 @@ class LoginDialog(QDialog):
             self.pw.clear()
             self.status.setText(f"Too many failed attempts. Try again in "
                                 f"{config.LOCKOUT_SECONDS // 60} minutes.")
+            set_role(self.status, "banner-danger")
+            return
+        except DecryptionError:
+            self.pw.clear()
+            self.status.setText("The data file failed its integrity check (it was altered or "
+                                "damaged). Nothing was opened. Restore it from a backup: see "
+                                "the Backup and Disaster Recovery Policy.")
             set_role(self.status, "banner-danger")
             return
         except AuthError:

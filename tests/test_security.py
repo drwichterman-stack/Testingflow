@@ -65,6 +65,7 @@ def test_tampered_database_rejected(svc, home):
     s = AppService(KeyStore(home / "keystore.json", scrypt_n=2 ** 12), p, home / "audit.log.enc")
     with pytest.raises(crypto.DecryptionError):
         s.login("drsmith", PASSWORD)
+    assert s.session is None and s.db is None
 
 
 def test_audit_log_chain_and_failed_login(svc, client_a, home):

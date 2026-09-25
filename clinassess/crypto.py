@@ -5,11 +5,11 @@ All encryption uses AES-256-GCM (authenticated encryption) from the
 
 Key hierarchy
 -------------
-    password --scrypt--> KEK (per user)  --AES-256-GCM wraps--> DEK
-    DEK (random 256-bit) --AES-256-GCM--> database file
-    DEK                  --AES-256-GCM--> audit-log private key (X25519)
-    audit public key     --X25519 + HKDF + AES-256-GCM--> each audit log line
-    export password --scrypt--> archive key --AES-256-GCM--> backup archive
+    password -> [scrypt] -> KEK (per user)  -> [AES-256-GCM wraps] -> DEK
+    DEK (random 256-bit) -> [AES-256-GCM] -> database file
+    DEK                  -> [AES-256-GCM] -> audit-log private key (X25519)
+    audit public key     -> [X25519 + HKDF + AES-256-GCM] -> each audit log line
+    export password -> [scrypt] -> archive key -> [AES-256-GCM] -> backup archive
 
 The audit log is sealed to a public key so that events that happen before
 login (for example, failed login attempts) can still be written encrypted.

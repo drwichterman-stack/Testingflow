@@ -1,3 +1,4 @@
 -r requirements.txt
 pytest>=8.0
 pyinstaller>=6.0
+pip-licenses>=4.0
