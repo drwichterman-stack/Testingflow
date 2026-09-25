@@ -128,4 +128,5 @@ INSTRUMENT = Instrument(
     flows=("A",), version="cats-form-2", verification=PUBLISHED,
     variants=VARIANTS, fields_for=fields_for, score=score,
     description="15 events (Yes/No), symptom items (0-3), and 5 interference items.",
+    paper_form=True,
 )

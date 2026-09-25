@@ -15,6 +15,10 @@ Type notes under each domain. Everything saves encrypted when you click **Save**
 Enter each response by item number from the paper form. The score panel on the right
 updates as you type, and flags problems in red.
 
+- For the free paper forms (SDQ, SNAP-IV, ASRS, WSR-II, CATS, WFIRS), you can click
+  **Capture form**, hold the completed form up to the camera, and click **Snap**. The marked
+  responses are filled in. Compare every response with the paper form, and clear each
+  ⚠ flag, before you save. Photos are never saved.
 - For **MMPI-3, Conners 4, Brown EF/A, and TOVA**, score the test in the publisher's software
   first, then type the scores in. These tests use licensed norms that the app does not include.
 

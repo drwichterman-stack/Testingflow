@@ -28,6 +28,7 @@ Offline desktop software for scoring clinical assessments and writing reports on
 | **Safety alerts** | Suicide and self-injury items on the WSR-II raise a red alert on the form, the client page, and in the report tables |
 | **Report editor** | Auto-drafted report; every narrative section editable; score tables, headings, header, and disclaimer locked; each save is a new version; revert to auto-generated at any time |
 | **PDF** | "Patient Name: X \| Page: N" at the top right of every page; footer with generation date and a blank clinician line; signature block and confidentiality notice on the final page; AES-256 encrypted; printing disabled |
+| **Camera capture** | For the free paper forms: hold the completed form up to the camera, click Snap, and the marked responses are filled in. Doubtful and safety items are flagged for checking before saving. Photos stay in memory and are never saved. See [docs/CAMERA_FORM_CAPTURE.md](docs/CAMERA_FORM_CAPTURE.md) |
 | **Dictation** | On-device macOS speech-to-text into notes and report sections. Audio never leaves the Mac and is never saved |
 | **Audit trail** | Encrypted, hash-chained log of logins, failed logins, views, searches, changes (field names only), deletions, exports, backup tests |
 | **Deletion** | Reason and typed confirmation required; audited with record counts |
@@ -69,7 +70,7 @@ python -m clinassess      # start the app
 ./build_macos.sh          # build dist/ClinAssess.app and dist/ClinAssess-<version>.dmg
 ```
 
-`build_macos.sh` runs the tests, draws the app icon, bundles the app without Qt's networking modules, adds the macOS privacy strings for dictation, and builds the `.dmg` (app, Applications shortcut, license agreement, README, quick start guide, third-party notices). With `SIGN_IDENTITY` and `NOTARY_PROFILE` set, it also signs and notarizes. See [docs/COMMERCIAL_RELEASE.md](docs/COMMERCIAL_RELEASE.md).
+`build_macos.sh` runs the tests, draws the app icon, bundles the app without Qt's networking modules, adds the macOS privacy strings for dictation and the camera, and builds the `.dmg` (app, Applications shortcut, license agreement, README, quick start guide, third-party notices). With `SIGN_IDENTITY` and `NOTARY_PROFILE` set, it also signs and notarizes. See [docs/COMMERCIAL_RELEASE.md](docs/COMMERCIAL_RELEASE.md).
 
 On first launch the app shows the license agreement and asks you to create the **administrator account**. That password protects the encryption key. **There is no recovery.**
 
@@ -90,7 +91,7 @@ On first launch the app shows the license agreement and asks you to create the *
 1. **Sign in.** Cmd+L locks the app at once.
 2. **New client:** name, DOB, grade, flow. For Flow A, tick *Include ASRS* only when appropriate.
 3. **Start session:** opens today's interview notes (type or dictate).
-4. **Add assessment:** enter responses by item number from the paper form; the score panel updates as you click.
+4. **Add assessment:** enter responses by item number from the paper form, or click **Capture form** and snap the paper form with the camera, then check every response; the score panel updates as you click.
 5. **Generate report:** edit sections, replace every `[Clinician to complete ...]` prompt, **Save version**.
 6. **Export PDF:** choose a PDF password and send it to the recipient separately from the file.
 7. **Monthly:** Admin > Export encrypted archive, then Admin > Test a backup.
@@ -110,10 +111,11 @@ clinassess/
   report.py          report sections, locked titles, auto-draft text
   pdf.py             PDF layout and AES-256 encryption
   dictation.py       on-device speech recognition (macOS Speech framework)
+  omr.py             reads marked boxes from camera photos of paper forms (numpy, Pillow)
   prefs.py           display preferences (no PHI)
   scoring/           one module per instrument; pure functions; unit tested
   ui/                PySide6 windows (no data logic)
-tests/               scoring, security, report/PDF, offline, GUI smoke tests
+tests/               scoring, security, report/PDF, offline, mark reading, GUI tests
 docs/                compliance, scoring, retention, backup, release documents and log templates
 ```
 
@@ -156,6 +158,7 @@ Mapping to the Security Rule, 45 CFR 164.312. Administrative and physical safegu
 - The same test file runs the full workflow and the GUI with every socket call replaced by one that fails, and cuts the network in the middle of a session.
 - The `.app` is built without Qt's networking and web modules.
 - Dictation requires on-device recognition (`requiresOnDeviceRecognition`). If a Mac cannot transcribe on-device, the Dictate button is disabled; it never falls back to Apple's servers.
+- Camera capture reads photos inside the app (numpy and Pillow). There is no cloud OCR, and photos are never written to disk.
 - The only way anything leaves the app is an explicit user export (PDF or archive), and both are encrypted.
 
 ## Known limitations
@@ -164,11 +167,12 @@ Mapping to the Security Rule, 45 CFR 164.312. Administrative and physical safegu
 2. **Licensed instruments are not scored.** MMPI-3, Conners 4, Brown EF/A, and TOVA scores are typed in from the publisher's software.
 3. **Items marked VERIFY** in the scoring reference need checking against the manuals (SNAP-IV cutoffs, WSR-II symptom convention, CATS caregiver cutoffs, Conners 4 bands).
 4. **Dictation is untested on hardware.** It was written against Apple's documented API but could not run in the Linux build environment. Test it on a Mac (COMPLIANCE_REVIEW.md, Part C).
-5. **Memory.** Decrypted data exists in RAM while the app is unlocked; Python cannot guarantee that keys are wiped. macOS encrypts swap. Lock the app when away.
-6. **Keys are not rotated when a user is removed.** For a staff departure: export an archive, reinstall, restore.
-7. **PDF print restriction is advisory.** Preview and Acrobat honor it; other viewers may not. The AES-256 password is the real control.
-8. **Screen capture is not blocked.** Unsaved form entries are discarded on auto-lock.
-9. **One Mac per installation.** There is no multi-computer sync, by design.
+5. **Camera capture is untested on hardware and on real forms.** The reading engine is tested on synthetic forms and simulated camera photos. The live camera could not run in the Linux build environment. Validate it on a Mac with real completed forms (COMPLIANCE_REVIEW.md, Part E) before relying on it.
+6. **Memory.** Decrypted data exists in RAM while the app is unlocked; Python cannot guarantee that keys are wiped. macOS encrypts swap. Lock the app when away.
+7. **Keys are not rotated when a user is removed.** For a staff departure: export an archive, reinstall, restore.
+8. **PDF print restriction is advisory.** Preview and Acrobat honor it; other viewers may not. The AES-256 password is the real control.
+9. **Screen capture is not blocked.** Unsaved form entries are discarded on auto-lock.
+10. **One Mac per installation.** There is no multi-computer sync, by design.
 
 ## Documentation index
 
@@ -176,6 +180,7 @@ Mapping to the Security Rule, 45 CFR 164.312. Administrative and physical safegu
 |---|---|
 | [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) | Quick start guide (also in the app under Help) |
 | [docs/COMPLIANCE_REVIEW.md](docs/COMPLIANCE_REVIEW.md) | How to get the app reviewed; reviewer test script, including offline and dictation tests |
+| [docs/CAMERA_FORM_CAPTURE.md](docs/CAMERA_FORM_CAPTURE.md) | Capturing paper forms with the camera: use, privacy, how reading works, tested accuracy |
 | [docs/SCORING_REFERENCE.md](docs/SCORING_REFERENCE.md) | Scoring rules, sources, form verification, and sign-off |
 | [docs/DATA_RETENTION.md](docs/DATA_RETENTION.md) | Retention and deletion procedures |
 | [docs/BACKUP_AND_DISASTER_RECOVERY_POLICY.md](docs/BACKUP_AND_DISASTER_RECOVERY_POLICY.md) | Backup and DR policy for the compliance officer |

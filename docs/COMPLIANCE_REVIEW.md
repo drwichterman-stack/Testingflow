@@ -63,6 +63,22 @@ The automated test `tests/test_offline.py` repeats B1 to B3 with every network c
 
 **Policy point:** the feature is intended for the clinician dictating their own notes. Recording or transcribing a client session requires the client's informed consent and must follow your state's recording-consent law. Decide and document whether in-session dictation is allowed.
 
+## Part E. Camera form capture (if the practice will use it)
+
+| # | Test | Expected result | Pass |
+|---|---|---|---|
+| E1 | Open an SDQ, click **Capture form** (first time) | macOS asks for Camera permission; the preview shows the camera | |
+| E2 | Deny permission, reopen | A message explains how to allow it in System Settings; nothing crashes | |
+| E3 | Turn off Wi-Fi, capture and read a form | Works fully offline | |
+| E4 | Snap a completed SDQ, outline items 1-25, apply | Responses filled in; doubtful items flagged; overlay colors match | |
+| E5 | Capture a second SDQ of the same version | Saved outline is placed automatically and reads correctly | |
+| E6 | Capture a WSR-II with suicide items marked | Safety items are flagged "Safety: confirm" even when read clearly | |
+| E7 | Try to save with flags remaining | App asks for confirmation; the audit entry records the unchecked count | |
+| E8 | After capture, search the data folder, `/tmp`, and `~/Pictures` for images | None: photos are never saved | |
+| E9 | Accuracy: 10 real completed forms per instrument you will use; compare every item with a manual entry | Record wrong-but-unflagged items. **Any** such item means the feature is not approved for that form and lighting setup | |
+
+**Policy point:** the clinician must compare every response with the paper form before saving. The paper form stays the source record under your retention policy.
+
 ## Part D. Administrative safeguards (practice, with the compliance officer)
 
 The software covers technical safeguards only. HIPAA also requires the following, which remain the practice's responsibility:
@@ -82,6 +98,7 @@ The software covers technical safeguards only. HIPAA also requires the following
 | A. Technical | | | | |
 | B. Offline | | | | |
 | C. Dictation | | | | |
+| E. Camera capture | | | | |
 | D. Administrative | | | | |
 | **Approved for clinical use** | | | | |
 

@@ -33,6 +33,7 @@ class Field:
     maximum: float | None = None
     section: str = ""
     help: str = ""
+    critical: bool = False  # safety item: always re-checked by a person after a camera read
 
 
 @dataclass
@@ -77,6 +78,7 @@ class Instrument:
     score: Callable[[str, dict, dict], ScoreResult]  # (variant, responses, context)
     description: str = ""
     gated: bool = False  # Flow A ASRS: shown only if enabled at intake
+    paper_form: bool = False  # free paper form: responses can be read with the camera
 
 
 class ValidationError(ValueError):

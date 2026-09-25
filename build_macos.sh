@@ -19,7 +19,8 @@ python -m pytest -q
 echo "== 1b. Third-party license texts"
 cp THIRD_PARTY_NOTICES.txt build_notices.tmp
 pip-licenses --format=plain-vertical --with-license-file --no-license-path \
-  --packages PySide6 PySide6-Essentials shiboken6 cryptography reportlab pypdf \
+  --packages PySide6 PySide6-Essentials PySide6-Addons shiboken6 cryptography reportlab pypdf \
+  numpy pillow \
   pyobjc-core pyobjc-framework-Speech pyobjc-framework-AVFoundation >> build_notices.tmp || true
 mkdir -p build && mv build_notices.tmp build/THIRD_PARTY_NOTICES.txt
 
@@ -51,9 +52,10 @@ pyinstaller --noconfirm --clean --windowed --name ClinAssess \
   --exclude-module tkinter \
   run_clinassess.py
 
-echo "== 4. Info.plist privacy strings (required for dictation)"
+echo "== 4. Info.plist privacy strings (required for dictation and camera capture)"
 PL="$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'ClinAssess uses the microphone only while you dictate notes. Audio is processed on this Mac and never saved or sent anywhere.'" "$PL" || true
+/usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'ClinAssess uses the camera only while you capture a completed paper form. Photos are read on this Mac, never saved, and never sent anywhere.'" "$PL" || true
 /usr/libexec/PlistBuddy -c "Add :NSSpeechRecognitionUsageDescription string 'Dictation is transcribed on this Mac using on-device speech recognition. Nothing is sent to Apple or any server.'" "$PL" || true
 /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION" "$PL" 2>/dev/null || \
   /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$PL"
@@ -66,6 +68,7 @@ if [[ -n "${SIGN_IDENTITY:-}" ]]; then
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>com.apple.security.device.audio-input</key><true/>
+  <key>com.apple.security.device.camera</key><true/>
 </dict></plist>
 XML
   codesign --deep --force --options runtime --timestamp \

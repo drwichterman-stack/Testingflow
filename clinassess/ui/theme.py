@@ -84,6 +84,10 @@ def stylesheet(t: dict, pt: float) -> str:
     QPushButton[role="big"], QToolButton[role="big"] {{ padding: 12px 20px; min-height: 30px; }}
     QToolButton::menu-indicator {{ image: none; width: 0px; }}
     QPushButton[role="seg"] {{ padding: 5px 10px; border-radius: 6px; min-height: 18px; }}
+    QPushButton[role="flag"] {{ background: {t['warn_bg']}; color: {t['warn']};
+        border: 1px solid {t['warn']}; padding: 4px 10px; font-weight: 600; }}
+    QPushButton[role="flag-danger"] {{ background: {t['danger_bg']}; color: {t['danger']};
+        border: 1px solid {t['danger']}; padding: 4px 10px; font-weight: 600; }}
     QPushButton[role="seg"]:checked {{ background: {t['primary']}; color: {t['primary_text']};
         border-color: {t['primary']}; font-weight: 600; }}
     QLineEdit, QPlainTextEdit, QTextEdit, QTextBrowser, QComboBox, QDateEdit, QSpinBox {{

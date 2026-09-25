@@ -152,7 +152,7 @@ def wsr_fields(variant: str) -> list[Field]:
     for key, title, items in WSR_SECTIONS:
         for i, label in enumerate(items, start=1):
             fs.append(Field(f"{key}_{i}", f"{i}. {label}", "choice", WSR_RESPONSES,
-                            section=title))
+                            section=title, critical=(key, i) in SAFETY_ITEMS))
     fs.append(Field("addiction_other", "Other addiction (describe)", "line",
                     section="Addictions"))
     fs.append(Field("other", "Other difficulties (as written on form)", "text",
@@ -223,6 +223,7 @@ WSR2 = Instrument(
     variants=WSR_VARIANTS, fields_for=wsr_fields, score=wsr_score,
     description="19 sections rated None/Mild/Moderate/Severe/N-A. ADHD and ODD sections are "
                 "compared with DSM-5 symptom counts. Suicide items raise a safety alert.",
+    paper_form=True,
 )
 
 # ---------------------------------------------------------------------------
@@ -361,6 +362,7 @@ WFIRS_P = Instrument(
     variants=[("parent", "Parent report")], fields_for=_wfirs_fields(WFIRS_P_DOMAINS),
     score=_wfirs_score(WFIRS_P_DOMAINS),
     description="Functional impairment in the last month. Scored per the form's scoring box.",
+    paper_form=True,
 )
 
 WFIRS_S = Instrument(
@@ -370,6 +372,7 @@ WFIRS_S = Instrument(
     score=_wfirs_score(WFIRS_S_DOMAINS),
     description="Functional impairment in the last month. Scored per the form's scoring box. "
                 "Leave Work or School blank (or n/a) if not applicable.",
+    paper_form=True,
 )
 
 INSTRUMENT = WSR2  # backwards-compatible name

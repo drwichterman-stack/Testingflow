@@ -243,7 +243,8 @@ class AppService:
 
     def save_assessment(self, client_id: int, instrument: str, variant: str,
                         administered_on: str, responses: dict,
-                        assessment_id: int | None = None) -> int:
+                        assessment_id: int | None = None,
+                        audit_details: dict | None = None) -> int:
         session, db = self._require()
         client = self._client_row(client_id)
         allowed = {i.key for i in instruments_for(client["flow"], bool(client["asrs_enabled"]))}
@@ -286,7 +287,8 @@ class AppService:
                 aid, action, details = assessment_id, "ASSESSMENT_UPDATE", {
                     "fields_changed": changed}
         self.audit(action, client["ref_code"], "assessment", aid,
-                   {"instrument": instrument, "variant": variant, **details})
+                   {"instrument": instrument, "variant": variant, **details,
+                    **(audit_details or {})})
         return aid
 
     def list_assessments(self, client_id: int) -> list[dict]:
@@ -532,6 +534,42 @@ class AppService:
             raise ValueError("unsupported timeout")
         db.set_setting("idle_timeout_min", str(minutes))
         self.audit("SETTING_CHANGE", details={"idle_timeout_min": minutes})
+
+    # --- Camera capture of paper forms ---------------------------------------
+    # Outline layouts hold only page-relative coordinates and item keys (no
+    # PHI). They are kept in the encrypted database so that preferences.json
+    # stays the only unencrypted file.
+
+    @staticmethod
+    def _layout_key(instrument: str, variant: str) -> str:
+        inst = INSTRUMENTS.get(instrument)
+        if inst is None or not inst.paper_form or variant not in {v for v, _ in inst.variants}:
+            raise ValueError("camera capture is not available for this form")
+        return f"scan_layout:{instrument}:{variant}"
+
+    def scan_layout(self, instrument: str, variant: str) -> dict | None:
+        _, db = self._require()
+        raw = db.get_setting(self._layout_key(instrument, variant), "")
+        try:
+            data = json.loads(raw) if raw else None
+        except ValueError:
+            return None
+        return data if isinstance(data, dict) else None
+
+    def save_scan_layout(self, instrument: str, variant: str, layout: dict) -> None:
+        _, db = self._require()
+        db.set_setting(self._layout_key(instrument, variant), json.dumps(layout))
+        self.audit("SCAN_LAYOUT_SAVE", details={"instrument": instrument, "variant": variant,
+                                                "blocks": len(layout.get("blocks", []))})
+
+    def record_form_capture(self, client_id: int, instrument: str, variant: str,
+                            counts: dict) -> None:
+        """Audit that camera-read responses were applied to a form (counts only)."""
+        self._layout_key(instrument, variant)
+        client = self._client_row(client_id)
+        self.audit("FORM_CAPTURE", client["ref_code"], "assessment", None,
+                   {"instrument": instrument, "variant": variant,
+                    **{k: int(v) for k, v in counts.items()}})
 
     def todays_interview(self, client_id: int) -> dict | None:
         """The interview entry dated today, if any ("Start session" reopens it)."""

@@ -13,10 +13,15 @@ OpenSSL (via cryptography)        Apache License 2.0
 ReportLab                         BSD 3-Clause
 pypdf                             BSD 3-Clause
 PyObjC (macOS only)               MIT
+numpy                             BSD 3-Clause
+Pillow                            MIT-CMU (HPND)
+Qt Multimedia (PySide6 Addons)    GNU Lesser General Public License v3
+FFmpeg (via Qt Multimedia)        GNU Lesser General Public License v2.1
 Python                            Python Software Foundation License
 
 LGPL NOTICE (Qt / PySide6)
-The Qt and PySide6 libraries are used unmodified and are included as
+The Qt and PySide6 libraries (including Qt Multimedia and the FFmpeg
+libraries it loads for camera access) are used unmodified and are included as
 separate, dynamically loaded libraries inside ClinAssess.app
 (Contents/Frameworks and Contents/Resources). You may replace them with
 a compatible version of your choosing. The source code of these

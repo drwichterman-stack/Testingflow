@@ -177,4 +177,5 @@ INSTRUMENT = Instrument(
     flows=("A",), version="sdq-3band-1", verification=PUBLISHED,
     variants=VARIANTS, fields_for=fields_for, score=score,
     description="25 items, 5 scales. Enter responses from the paper form by item number.",
+    paper_form=True,
 )

@@ -75,4 +75,5 @@ INSTRUMENT = Instrument(
     variants=[("parent", "Parent"), ("teacher", "Teacher")],
     fields_for=fields_for, score=score,
     description="26 items (0-3). Subscale averages compared with Swanson's 5% cutoffs.",
+    paper_form=True,
 )

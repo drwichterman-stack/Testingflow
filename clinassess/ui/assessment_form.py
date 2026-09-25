@@ -5,7 +5,7 @@ from __future__ import annotations
 from html import escape
 
 from PySide6.QtCore import QDate, Qt, QTimer
-from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtGui import QDoubleValidator, QFont, QFontMetrics, QIntValidator
 from PySide6.QtWidgets import (QComboBox, QDateEdit, QDialog, QDialogButtonBox, QFormLayout,
                                QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
                                QPushButton, QScrollArea, QSplitter, QTextBrowser, QVBoxLayout,
@@ -13,22 +13,32 @@ from PySide6.QtWidgets import (QComboBox, QDateEdit, QDialog, QDialogButtonBox, 
 
 from ..scoring import INSTRUMENTS
 from ..scoring.base import Field
-from .common import error
+from .. import omr
+from .common import confirm, error
 from .dictate import DictateButton
 from .theme import html_table_css, set_role
 
 
 class SegmentedChoice(QWidget):
-    """One-click response buttons. Clicking the selected button clears it."""
+    """One-click response buttons. Clicking the selected button clears it.
 
-    def __init__(self, options: list[tuple[int, str]], value, on_change, compact: bool):
+    After a camera read, a review flag can be shown under the buttons.
+    Clicking any response, or the flag itself, marks the item as checked.
+    """
+
+    def __init__(self, options: list[tuple[int, str]], value, on_change, compact: bool,
+                 on_reviewed=None):
         super().__init__()
         self._value = None
         self._on_change = on_change
+        self._on_reviewed = on_reviewed
         self.buttons: dict[int, QPushButton] = {}
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(3)
+        lay = QHBoxLayout()
         lay.setSpacing(4)
+        outer.addLayout(lay)
         for code, label in options:
             text = ("N/A" if code < 0 else str(code)) if compact else \
                 (label if code < 0 else f"{code}  {label}")
@@ -36,16 +46,50 @@ class SegmentedChoice(QWidget):
             b.setCheckable(True)
             b.setToolTip(label)
             b.setCursor(Qt.CursorShape.PointingHandCursor)
-            b.setMinimumWidth(52 if compact else 0)
-            b.clicked.connect(lambda _=False, c=code: self._clicked(c))
             set_role(b, "seg")
+            bold = QFont(b.font())
+            bold.setBold(True)  # the selected state is bold; keep its text unclipped
+            b.setMinimumWidth(max(52 if compact else 0,
+                                  QFontMetrics(bold).horizontalAdvance(text) + 24))
+            b.clicked.connect(lambda _=False, c=code: self._clicked(c))
             self.buttons[code] = b
             lay.addWidget(b)
         lay.addStretch(1)
+        # Review flag after a camera read, on its own line so it never
+        # squeezes the response buttons.
+        flag_row = QHBoxLayout()
+        self.flag = QPushButton()
+        self.flag.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.flag.clicked.connect(self.clear_flag)
+        self.flag.hide()
+        flag_row.addWidget(self.flag)
+        flag_row.addStretch(1)
+        outer.addLayout(flag_row)
         self.setValue(value)
+
+    @property
+    def flagged(self) -> bool:
+        return not self.flag.isHidden()
+
+    def set_flag(self, text: str, danger: bool = False, detail: str = ""):
+        self.flag.setText("\u26A0 " + text)
+        self.flag.setToolTip((detail + "\n\n" if detail else "") +
+                             "Compare with the paper form, then click here (or choose the "
+                             "correct response) to mark this item checked.")
+        set_role(self.flag, "flag-danger" if danger else "flag")
+        self.flag.show()
+        self.updateGeometry()
+
+    def clear_flag(self):
+        if self.flagged:
+            self.flag.hide()
+            self.updateGeometry()
+            if self._on_reviewed:
+                self._on_reviewed()
 
     def _clicked(self, code):
         self.setValue(None if self._value == code else code)
+        self.clear_flag()
         self._on_change()
 
     def setValue(self, value):
@@ -67,6 +111,8 @@ class AssessmentDialog(QDialog):
         self.existing = existing
         self.widgets: dict[str, QWidget] = {}
         self.values: dict = dict(existing["responses"]) if existing else {}
+        self.review_flags: dict[str, tuple[str, bool, str]] = {}  # key -> (text, danger, detail)
+        self.captured = False
         self.setWindowTitle(f"{self.inst.name}: {client['first_name']} {client['last_name']}")
         self.resize(1100, 760)
 
@@ -85,6 +131,17 @@ class AssessmentDialog(QDialog):
         top.addWidget(self.variant, 1)
         top.addWidget(QLabel("Date administered:"))
         top.addWidget(self.date)
+        self.capture_btn = None
+        if self.inst.paper_form:
+            self.capture_btn = QPushButton("\U0001F4F7  Capture form")
+            self.capture_btn.setToolTip("Hold the completed paper form up to the camera and "
+                                        "fill in the responses from the photo.")
+            self.capture_btn.clicked.connect(self._capture)
+            top.addWidget(self.capture_btn)
+        self.review_banner = QLabel()
+        self.review_banner.setWordWrap(True)
+        set_role(self.review_banner, "banner-warn")
+        self.review_banner.hide()
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -92,13 +149,14 @@ class AssessmentDialog(QDialog):
         split = QSplitter(Qt.Orientation.Horizontal)
         split.addWidget(self.scroll)
         split.addWidget(self.preview)
-        split.setSizes([650, 450])
+        split.setSizes([700, 400])
 
         lay = QVBoxLayout(self)
         desc = QLabel(self.inst.description)
         desc.setWordWrap(True)
         lay.addWidget(desc)
         lay.addLayout(top)
+        lay.addWidget(self.review_banner)
         lay.addWidget(split, 1)
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Save |
                               QDialogButtonBox.StandardButton.Cancel)
@@ -123,7 +181,10 @@ class AssessmentDialog(QDialog):
         v = self.values.get(f.key)
         if f.kind == "choice":
             compact = sum(len(lbl) for _, lbl in f.options) > 48
-            w = SegmentedChoice(f.options, v, self._timer.start, compact)
+            w = SegmentedChoice(f.options, v, self._timer.start, compact,
+                                on_reviewed=lambda k=f.key: self._reviewed(k))
+            if f.key in self.review_flags:
+                w.set_flag(*self.review_flags[f.key])
         elif f.kind == "text":
             w = QPlainTextEdit(v or "")
             w.setMinimumHeight(70)
@@ -225,13 +286,90 @@ class AssessmentDialog(QDialog):
             html.append(f"<p class='{cls}'>{escape(w)}</p>")
         self.preview.setHtml("".join(html))
 
+    # ------------------------------------------------------------------
+    # Camera capture of the paper form
+
+    def _capture(self):
+        from .capture_form import CaptureFormDialog
+        fields = self.inst.fields_for(self._variant())
+        dlg = CaptureFormDialog(self, self.service, self.inst, self._variant(), fields)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self.apply_capture(dlg.results, dlg.counts)
+
+    def apply_capture(self, results: dict, counts: dict | None = None) -> bool:
+        """Put camera-read responses on the form and flag what needs checking."""
+        self._collect()
+        fields = {f.key: f for f in self.inst.fields_for(self._variant())}
+        results = {k: r for k, r in results.items() if k in fields}
+        replaced = [k for k, r in results.items()
+                    if self.values.get(k) not in (None, "") and self.values.get(k) != r.code]
+        if replaced and not confirm(self, f"The photo gives different responses for "
+                                          f"{len(replaced)} items that are already filled in. "
+                                          "Replace them with the photo's responses?"):
+            return False
+        for key, r in results.items():
+            self.values[key] = r.code
+            text = None if r.status == omr.OK else omr.FLAG_TEXT[r.status]
+            detail = "" if r.status == omr.OK else omr.STATUS_TEXT[r.status]
+            danger = r.status in (omr.BLANK, omr.MULTIPLE)
+            if fields[key].critical:
+                text, danger = "Safety: confirm", True
+                detail = "Safety item. Always confirm it against the paper form."
+            if text:
+                self.review_flags[key] = (text, danger, detail)
+            else:
+                self.review_flags.pop(key, None)
+            w = self.widgets.get(key)
+            if isinstance(w, SegmentedChoice):
+                w.setValue(r.code)
+                if text:
+                    w.set_flag(text, danger, detail)
+                else:
+                    w.clear_flag()
+        self.captured = True
+        self.service.record_form_capture(self.client["id"], self.inst.key, self._variant(),
+                                         counts or {"items": len(results)})
+        self._update_banner()
+        self._refresh_preview()
+        return True
+
+    def _reviewed(self, key: str):
+        self.review_flags.pop(key, None)
+        self._update_banner()
+
+    def _update_banner(self):
+        if not self.captured:
+            return
+        n = len(self.review_flags)
+        if n:
+            self.review_banner.setText(
+                f"Responses were filled in from the camera photo. {n} items are flagged "
+                "\u26A0 for checking. Compare every response with the paper form before "
+                "saving; click a flag once its item is correct.")
+            set_role(self.review_banner, "banner-warn")
+        else:
+            self.review_banner.setText(
+                "Responses were filled in from the camera photo and all flagged items have "
+                "been checked. Compare the remaining responses with the paper form before "
+                "saving.")
+            set_role(self.review_banner, "banner-ok")
+        self.review_banner.show()
+
     def _save(self):
         responses = self._collect()
+        current = {f.key for f in self.inst.fields_for(self._variant())}
+        open_flags = sorted(k for k in self.review_flags if k in current)
+        if open_flags and not confirm(
+                self, f"{len(open_flags)} items read from the camera photo are still flagged "
+                      "for checking. Save anyway?"):
+            return
+        extra = ({"camera_capture": True, "flags_unchecked": len(open_flags)}
+                 if self.captured else None)
         try:
             self.saved_id = self.service.save_assessment(
                 self.client["id"], self.inst.key, self._variant(),
                 self.date.date().toString("yyyy-MM-dd"), responses,
-                self.existing["id"] if self.existing else None)
+                self.existing["id"] if self.existing else None, audit_details=extra)
         except (ValueError, KeyError) as exc:
             return error(self, f"Not saved: {exc}")
         self.accept()

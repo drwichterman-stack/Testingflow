@@ -3,6 +3,8 @@ PySide6>=6.6            # LGPL v3 (Qt for Python); permits closed-source commerc
 cryptography>=42.0      # Apache 2.0 / BSD
 reportlab>=4.0          # BSD
 pypdf>=4.0              # BSD
+numpy>=1.26             # BSD 3-Clause; camera form reading (Pillow comes with reportlab)
+pillow>=10.0            # MIT-CMU (HPND); image handling for camera form reading
 # On-device dictation (macOS only)
 pyobjc-framework-Speech>=10.0; sys_platform == "darwin"        # MIT
 pyobjc-framework-AVFoundation>=10.0; sys_platform == "darwin"  # MIT

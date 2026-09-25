@@ -41,6 +41,7 @@ If a permission is refused, the instrument can move to the transcription model (
 - [ ] Architecture: PyInstaller builds for the build Mac's CPU. Build on Apple Silicon for Apple Silicon customers, and either build a second Intel `.dmg` or use a universal2 Python for a universal build. State the requirements on the sales page (macOS 13 or later).
 - [ ] Test the `.dmg` on a clean Mac with no Python installed, with Wi-Fi off (COMPLIANCE_REVIEW.md, Part B).
 - [ ] Test dictation on real hardware (Part C). It could not be run in the Linux development environment.
+- [ ] Test camera capture on real hardware with real completed forms (COMPLIANCE_REVIEW.md, Part E). Only the reading engine has been tested, on synthetic forms.
 - [ ] Publish the SHA-256 checksum of each `.dmg` on the sales page.
 
 ## 3. Product decisions to confirm
@@ -50,7 +51,7 @@ If a permission is refused, the instrument can move to the transcription model (
 | **License enforcement** | None. Your offline requirement rules out activation servers | Accept that copies can be shared, or add an offline license key check (a key signed by you, verified locally, no network) in a later version |
 | **Group practices** | Several user accounts on **one Mac**. There is no shared network database, by design (offline, local-only) | Sell as "per Mac" licensing; state that there is no multi-computer sync |
 | **Updates** | No automatic updates (no network). Customers download new versions | The database has a `schema_version` for future migrations; every release must include a tested migration |
-| **Windows** | Not supported. The app is built and tested for macOS only | A Windows build is possible (PySide6 is cross-platform) but needs its own dictation engine, installer, and testing |
+| **Windows** | Not supported. The app is built and tested for macOS only | A Windows build is possible (PySide6 is cross-platform) but needs its own dictation engine, installer, and testing. Camera capture uses Qt Multimedia, which supports Windows webcams, so it should carry over with testing |
 | **Support** | No telemetry or crash reports (offline, and they could contain PHI) | Support policy: customers must never send PHI or screenshots with PHI. Publish this on the support page |
 | **Password recovery** | None (the publisher cannot decrypt customer data) | Say this clearly at purchase and in the setup screen (the app already warns) |
 

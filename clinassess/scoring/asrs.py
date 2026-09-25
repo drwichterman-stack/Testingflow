@@ -89,5 +89,5 @@ INSTRUMENT = Instrument(
     flows=("A", "B"), version="asrs-1.1-2", verification=PUBLISHED,
     variants=[("self", "Self-report")], fields_for=fields_for, score=score,
     description="18 items. Part A (1-6) is the screener; Part B (7-18) adds detail.",
-    gated=True,
+    gated=True, paper_form=True,
 )
