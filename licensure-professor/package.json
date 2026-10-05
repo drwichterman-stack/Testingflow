@@ -49,5 +49,6 @@
     "testMatch": [
       "<rootDir>/__tests__/**/*.test.{ts,tsx}"
     ]
-  }
+  },
+  "license": "UNLICENSED"
 }
