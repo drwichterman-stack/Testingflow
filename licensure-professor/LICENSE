@@ -1,0 +1,9 @@
+Copyright (c) 2026 The Licensure Professor. All rights reserved.
+
+This software and its course content are proprietary. No part of them may
+be copied, modified, distributed, or used without the prior written
+permission of The Licensure Professor.
+
+Third-party open-source components used by this app (React Native, Expo,
+React Navigation, and others listed in package.json) remain under their
+own licenses.

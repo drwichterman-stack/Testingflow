@@ -1,0 +1,145 @@
+{
+  "course": {
+    "id": "854184ba-bfd6-5607-b2ca-f3f8b8fbec91",
+    "title": "Unit 1: Assessment",
+    "description": "Foundations of classroom assessment.",
+    "totalLessons": 2,
+    "totalQuizzes": 1,
+    "progressPercentage": 66.67,
+    "lessons": [
+      {
+        "id": "14e11d36-6243-5bee-9c12-46a35f7a7f85",
+        "unitId": "854184ba-bfd6-5607-b2ca-f3f8b8fbec91",
+        "title": "What Is Assessment?",
+        "content": "# What Is Assessment?\n\nAssessment is the systematic collection of evidence about learning.",
+        "order": 0,
+        "completed": true,
+        "estimatedTime": 15
+      },
+      {
+        "id": "b7dafded-ea16-5c3a-8814-8ae53a9a253c",
+        "unitId": "854184ba-bfd6-5607-b2ca-f3f8b8fbec91",
+        "title": "Formative and Summative Assessment",
+        "content": "<p>Formative assessment guides instruction; summative assessment certifies achievement.</p>",
+        "order": 1,
+        "completed": false,
+        "estimatedTime": 20
+      }
+    ],
+    "quizzes": [
+      {
+        "id": "4f63b9af-b82b-5b7a-8ea9-1f6c3554d090",
+        "unitId": "854184ba-bfd6-5607-b2ca-f3f8b8fbec91",
+        "title": "Unit 1 Check",
+        "questions": [
+          {
+            "id": "03967b76-d809-5847-b57f-fa065983f524",
+            "quizId": "4f63b9af-b82b-5b7a-8ea9-1f6c3554d090",
+            "text": "Which type of assessment is primarily used to adjust instruction while learning is under way?",
+            "questionType": "multiple_choice",
+            "options": [
+              {
+                "id": "f3ada5a8-4ce1-5bcb-a3ed-f002a41753aa",
+                "questionId": "03967b76-d809-5847-b57f-fa065983f524",
+                "text": "Summative",
+                "order": 0
+              },
+              {
+                "id": "eecb7f51-2d0e-5b96-811e-58b7aedc69cb",
+                "questionId": "03967b76-d809-5847-b57f-fa065983f524",
+                "text": "Formative",
+                "order": 1
+              },
+              {
+                "id": "dd10e712-1816-5822-b340-dca1adecad89",
+                "questionId": "03967b76-d809-5847-b57f-fa065983f524",
+                "text": "Norm-referenced",
+                "order": 2
+              },
+              {
+                "id": "36d468e1-2c11-52d9-9121-0c5cc49f0141",
+                "questionId": "03967b76-d809-5847-b57f-fa065983f524",
+                "text": "Diagnostic placement",
+                "order": 3
+              }
+            ],
+            "correctAnswerId": "eecb7f51-2d0e-5b96-811e-58b7aedc69cb",
+            "explanation": "Formative assessment happens during instruction and informs what the teacher does next."
+          },
+          {
+            "id": "325c3d4d-5bc7-5d3e-9fb6-1e2681750c9a",
+            "quizId": "4f63b9af-b82b-5b7a-8ea9-1f6c3554d090",
+            "text": "A final examination is an example of summative assessment.",
+            "questionType": "true_false",
+            "options": [
+              {
+                "id": "f549bec4-1ae8-58f9-8f40-1576c0bf23d3",
+                "questionId": "325c3d4d-5bc7-5d3e-9fb6-1e2681750c9a",
+                "text": "True",
+                "order": 0
+              },
+              {
+                "id": "a715264a-1df9-519b-89f8-ed89ce6a14f6",
+                "questionId": "325c3d4d-5bc7-5d3e-9fb6-1e2681750c9a",
+                "text": "False",
+                "order": 1
+              }
+            ],
+            "correctAnswerId": "f549bec4-1ae8-58f9-8f40-1576c0bf23d3",
+            "explanation": "A final exam measures achievement at the end of a unit, which is summative."
+          }
+        ],
+        "timeLimit": 600,
+        "passingScore": 70,
+        "order": 0
+      }
+    ]
+  },
+  "userProgress": {
+    "userId": "device-7f3a2b",
+    "courseId": "854184ba-bfd6-5607-b2ca-f3f8b8fbec91",
+    "lessonsCompleted": [
+      "14e11d36-6243-5bee-9c12-46a35f7a7f85"
+    ],
+    "quizAttempts": [
+      {
+        "id": "2b92f22d-3cba-58d6-b51f-4b0ea5311294",
+        "quizId": "4f63b9af-b82b-5b7a-8ea9-1f6c3554d090",
+        "answers": [
+          {
+            "questionId": "03967b76-d809-5847-b57f-fa065983f524",
+            "selectedOptionId": "f3ada5a8-4ce1-5bcb-a3ed-f002a41753aa"
+          },
+          {
+            "questionId": "325c3d4d-5bc7-5d3e-9fb6-1e2681750c9a",
+            "selectedOptionId": "f549bec4-1ae8-58f9-8f40-1576c0bf23d3"
+          }
+        ],
+        "score": 50,
+        "isPassing": false,
+        "completedAt": "2026-09-20T15:04:00Z",
+        "timeSpent": 240
+      },
+      {
+        "id": "b9afaa6f-2c68-5824-9c43-230f18ca87db",
+        "quizId": "4f63b9af-b82b-5b7a-8ea9-1f6c3554d090",
+        "answers": [
+          {
+            "questionId": "03967b76-d809-5847-b57f-fa065983f524",
+            "selectedOptionId": "eecb7f51-2d0e-5b96-811e-58b7aedc69cb"
+          },
+          {
+            "questionId": "325c3d4d-5bc7-5d3e-9fb6-1e2681750c9a",
+            "selectedOptionId": "f549bec4-1ae8-58f9-8f40-1576c0bf23d3"
+          }
+        ],
+        "score": 100,
+        "isPassing": true,
+        "completedAt": "2026-09-21T10:30:00Z",
+        "timeSpent": 180
+      }
+    ],
+    "totalStudyTime": 2700,
+    "lastAccessedAt": "2026-09-21T10:35:00Z"
+  }
+}
