@@ -13,7 +13,7 @@ describe('database', () => {
     const { db, userId } = await setup();
     const courses = await repo.loadCourses(db, userId);
     expect(courses.map((c) => c.title)).toEqual(buildCourses().map((c) => c.title));
-    expect(courses.flatMap((c) => c.quizzes.flatMap((q) => q.questions)).length).toBeGreaterThanOrEqual(40);
+    expect(courses.flatMap((c) => c.quizzes.flatMap((q) => q.questions)).length).toBe(1003);
     expect(await repo.initDatabase(db, newId)).toBe(userId);
   });
 
@@ -24,7 +24,7 @@ describe('database', () => {
     await repo.setLessonComplete(db, userId, unit.lessons[0].id, true); // idempotent
     const after = (await repo.loadCourses(db, userId))[0];
     expect(after.lessons[0].completed).toBe(true);
-    expect(after.progressPercentage).toBe(13); // 1/4 lessons * 50 = 12.5 -> 13
+    expect(after.progressPercentage).toBe(4); // 1/12 lessons * 50 = 4.2 -> 4
     await repo.setLessonComplete(db, userId, unit.lessons[0].id, false);
     expect((await repo.loadCourses(db, userId))[0].lessons[0].completed).toBe(false);
   });
@@ -49,8 +49,8 @@ describe('database', () => {
     expect(attempts).toHaveLength(2);
     expect(attempts.find((x) => x.id === a)).toMatchObject({ score: 80, isPassing: true, timeSpent: 96 });
     expect(attempts.find((x) => x.id === a)!.answers).toHaveLength(1);
-    // Unit: 0 lessons; quiz bests 80, 0, 0 -> avg 26.67 * 0.5 = 13.3
-    expect((await repo.loadCourses(db, userId))[0].progressPercentage).toBe(13);
+    // Unit: 0 lessons; quiz bests 80 and 11 not taken -> avg 6.67 * 0.5 = 3.3
+    expect((await repo.loadCourses(db, userId))[0].progressPercentage).toBe(3);
   });
 
   it('re-seeding content keeps progress', async () => {

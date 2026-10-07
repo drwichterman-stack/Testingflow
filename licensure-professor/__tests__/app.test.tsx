@@ -4,7 +4,7 @@ import { renderApp } from './helpers/renderApp';
 
 const courses = buildCourses();
 const unit1 = courses[0];
-const quiz1 = unit1.quizzes[0]; // untimed, 5 questions
+const quiz1 = unit1.quizzes[0]; // untimed, 10 questions
 
 async function openQuiz1() {
   await fireEvent.press(await screen.findByTestId(`unit-${unit1.id}`));
@@ -16,7 +16,7 @@ const letter = (q: (typeof quiz1.questions)[number], optionId: string) =>
   'ABCD'[q.options.find((o) => o.id === optionId)!.order];
 
 describe('Home', () => {
-  it('shows the header, stat cards, and 3 units', async () => {
+  it('shows the header, stat cards, and 6 units', async () => {
     await renderApp();
     expect(await screen.findByText('NCE Exam Prep')).toBeTruthy();
     expect(screen.getByText("Master's/Doctoral Counseling")).toBeTruthy();
@@ -25,7 +25,9 @@ describe('Home', () => {
     for (const c of courses) {
       expect(await screen.findByText(c.title)).toBeTruthy();
     }
-    expect(screen.getAllByText('4 lessons, 3 quizzes')).toHaveLength(3);
+    expect(screen.getByText('12 lessons, 12 quizzes')).toBeTruthy();
+    expect(screen.getByText('17 lessons, 30 quizzes')).toBeTruthy();
+    expect(screen.getAllByText('5 lessons, 9 quizzes')).toHaveLength(1);
     expect(screen.getByTestId('stat-overall')).toHaveTextContent('0%');
   });
 });
@@ -35,14 +37,14 @@ describe('Lessons', () => {
     const { db } = await renderApp();
     await fireEvent.press(await screen.findByTestId(`unit-${unit1.id}`));
     await fireEvent.press(await screen.findByTestId('lesson-1'));
-    expect(await screen.findByTestId('lesson-counter')).toHaveTextContent('1 of 4');
-    expect(screen.getByText('12 min read')).toBeTruthy();
+    expect(await screen.findByTestId('lesson-counter')).toHaveTextContent('1 of 12');
+    expect(screen.getByText('9 min read')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('lesson-complete-next'));
-    await waitFor(() => expect(screen.getByTestId('lesson-counter')).toHaveTextContent('2 of 4'));
+    await waitFor(() => expect(screen.getByTestId('lesson-counter')).toHaveTextContent('2 of 12'));
     const rows = await db.getAllAsync<{ lesson_id: string }>('SELECT lesson_id FROM lesson_completions', []);
     expect(rows.map((r) => r.lesson_id)).toEqual([unit1.lessons[0].id]);
     await fireEvent.press(screen.getByTestId('lesson-prev'));
-    await waitFor(() => expect(screen.getByTestId('lesson-counter')).toHaveTextContent('1 of 4'));
+    await waitFor(() => expect(screen.getByTestId('lesson-counter')).toHaveTextContent('1 of 12'));
     expect(await screen.findByText('✓ Completed')).toBeTruthy();
   });
 });
@@ -68,21 +70,21 @@ describe('Quiz engine', () => {
     const { db } = await renderApp();
     await openQuiz1();
     for (const [i, q] of quiz1.questions.entries()) {
-      // Answer the first question wrong, the rest right: 4 of 5 = 80%.
+      // Answer the first question wrong, the rest right: 9 of 10 = 90%.
       const pick = i === 0 ? q.options.find((o) => o.id !== q.correctAnswerId)!.id : q.correctAnswerId;
       await fireEvent.press(screen.getByTestId(`option-${letter(q, pick)}`));
       await fireEvent.press(screen.getByTestId('quiz-submit'));
-      expect(await screen.findByTestId('quiz-explanation')).toHaveTextContent(q.explanation, { exact: false });
+      expect(await screen.findByTestId('quiz-explanation')).toHaveTextContent(q.explanation.replace(/\s+/g, ' '), { exact: false });
       await waitFor(async () =>
         expect(await db.getAllAsync('SELECT * FROM attempt_answers', [])).toHaveLength(i + 1));
       await fireEvent.press(screen.getByTestId('quiz-next'));
     }
-    expect(await screen.findByTestId('final-score')).toHaveTextContent('80%');
+    expect(await screen.findByTestId('final-score')).toHaveTextContent('90%');
     expect(screen.getByTestId('pass-badge')).toHaveTextContent('PASSED');
     await waitFor(async () => {
       const a = await db.getFirstAsync<{ score: number; is_passing: number; completed_at: string | null }>(
         'SELECT score, is_passing, completed_at FROM quiz_attempts', []);
-      expect(a).toMatchObject({ score: 80, is_passing: 1 });
+      expect(a).toMatchObject({ score: 90, is_passing: 1 });
       expect(a!.completed_at).not.toBeNull();
     });
     await fireEvent.press(screen.getByTestId('btn-review'));
@@ -110,23 +112,23 @@ describe('Quiz engine', () => {
     jest.useFakeTimers();
     try {
       const { db } = await renderApp();
-      const timed = unit1.quizzes[1]; // 480 s
+      const timed = unit1.quizzes[1]; // 10 items at 67.5 s = 675 s
       await fireEvent.press(await screen.findByTestId(`unit-${unit1.id}`));
       await fireEvent.press(await screen.findByTestId('quiz-2'));
-      expect(await screen.findByTestId('quiz-timer-text')).toHaveTextContent('8:00');
+      expect(await screen.findByTestId('quiz-timer-text')).toHaveTextContent('11:15');
       await act(async () => { jest.advanceTimersByTime(61_000); });
-      expect(screen.getByTestId('quiz-timer-text')).toHaveTextContent('6:59');
+      expect(screen.getByTestId('quiz-timer-text')).toHaveTextContent('10:14');
       const q = timed.questions[0];
       await fireEvent.press(screen.getByTestId(`option-${letter(q, q.correctAnswerId)}`));
       await fireEvent.press(screen.getByTestId('quiz-submit'));
-      await act(async () => { jest.advanceTimersByTime(480_000); });
-      expect(await screen.findByTestId('final-score')).toHaveTextContent('20%'); // 1 of 5
+      await act(async () => { jest.advanceTimersByTime(675_000); });
+      expect(await screen.findByTestId('final-score')).toHaveTextContent('10%'); // 1 of 10
       expect(screen.getByText(/Time ran out/)).toBeTruthy();
       await act(async () => { jest.useRealTimers(); });
       await waitFor(async () => {
         const a = await db.getFirstAsync<{ score: number; time_spent: number }>(
           'SELECT score, time_spent FROM quiz_attempts WHERE completed_at IS NOT NULL', []);
-        expect(a).toMatchObject({ score: 20, time_spent: 480 });
+        expect(a).toMatchObject({ score: 10, time_spent: 675 });
       });
     } finally {
       jest.useRealTimers();
@@ -143,10 +145,10 @@ describe('Progress', () => {
     await waitFor(async () =>
       expect(await db.getAllAsync('SELECT * FROM lesson_completions', [])).toHaveLength(1));
     await fireEvent.press(screen.getByText('Progress'));
-    // Unit 1: 1/4 lessons -> 12.5 -> 13%; overall (13 + 0 + 0) / 3 -> 4%
-    expect(await screen.findByTestId('overall-score')).toHaveTextContent('4%');
-    expect(screen.getByText('13%')).toBeTruthy();
+    // Unit 1: 1/12 lessons -> 4.2 -> 4%; overall (4 + 0 + 0 + 0 + 0 + 0) / 6 -> 1%
+    expect(await screen.findByTestId('overall-score')).toHaveTextContent('1%');
+    expect(screen.getByText('4%')).toBeTruthy();
     await fireEvent.press(screen.getByTestId(`progress-unit-${unit1.id}`));
-    expect(await screen.findByText('1 of 4')).toBeTruthy();
+    expect(await screen.findByText('1 of 12')).toBeTruthy();
   });
 });

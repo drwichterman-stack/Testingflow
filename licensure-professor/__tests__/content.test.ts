@@ -3,18 +3,20 @@ import { buildCourses, idFor } from '../src/data/content';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-describe('bundled sample content', () => {
+describe('bundled course content', () => {
   const courses = buildCourses();
   const lessons = courses.flatMap((c) => c.lessons);
   const quizzes = courses.flatMap((c) => c.quizzes);
   const questions = quizzes.flatMap((q) => q.questions);
 
-  it('has 3 units, 12 lessons, 9 quizzes, and 40+ questions', () => {
-    expect(courses).toHaveLength(3);
-    expect(courses[0].title).toBe('Unit 1: Assessment');
-    expect(lessons).toHaveLength(12);
-    expect(quizzes).toHaveLength(9);
-    expect(questions.length).toBeGreaterThanOrEqual(40);
+  it('has the site\'s 6 units, 64 lessons, 102 quizzes, and 1003 questions', () => {
+    expect(courses).toHaveLength(6);
+    expect(courses[0].title).toBe('Professional Practice & Ethics');
+    expect(courses.map((c) => c.lessons.length)).toEqual([12, 11, 17, 4, 15, 5]);
+    expect(courses.map((c) => c.quizzes.length)).toEqual([12, 12, 30, 9, 30, 9]);
+    expect(lessons).toHaveLength(64);
+    expect(quizzes).toHaveLength(102);
+    expect(questions).toHaveLength(1003);
   });
 
   it('uses unique UUID ids and correct foreign keys', () => {
@@ -47,13 +49,13 @@ describe('bundled sample content', () => {
   });
 
   it('ids are stable', () => {
-    expect(idFor('unit1')).toBe(idFor('unit1'));
-    expect(idFor('unit1')).not.toBe(idFor('unit2'));
+    expect(idFor('ethics')).toBe(idFor('ethics'));
+    expect(idFor('ethics')).not.toBe(idFor('assessment'));
   });
 
   it('lesson markdown parses into headings, paragraphs, and lists', () => {
     const blocks = parseMarkdown(lessons[1].content);
-    expect(blocks[0]).toEqual({ kind: 'h1', text: 'Reliability' });
+    expect(blocks[0]).toEqual({ kind: 'h1', text: 'The ACA Code of Ethics: structure, purposes and the six moral principles' });
     expect(blocks.some((b) => b.kind === 'ul')).toBe(true);
     expect(blocks.some((b) => b.kind === 'h2')).toBe(true);
   });

@@ -93,21 +93,27 @@ Before each store release, raise `version` (and `ios.buildNumber` and `android.v
 - **Overall score** = the mean of the unit scores.
 - **Study time** is the time the app is open in the foreground. Each stretch is one session, saved every 30 seconds and when the app goes to the background. "This week" starts on Monday.
 
-## Replacing the sample content
+## Updating the course content
 
-`src/data/content.ts` holds 3 units, 12 lessons, 9 quizzes, and 45 questions. The content is original sample material on standard counselor-education topics (assessment, human development, counseling theories and skills). It was written for this build, not copied from thelicensureprofessor.com. **Replace it with your course content, and have it reviewed, before release.**
+`src/data/content.ts` holds the NCE course from thelicensureprofessor.com: 6 units (the six NCE domains), 64 lessons, and 1003 practice questions in 102 quizzes. Its `UNITS` array is generated from the site's content bundle, `content/content.json` in the licensure-professor-app repository (refreshed there with `npm run sync-content`). Do not edit `UNITS` by hand; change the content on the website, then regenerate:
 
-- Each unit, lesson, and quiz has a stable `key`, and IDs are derived from it. Keep a key unchanged when you edit an item, so students keep their progress.
-- Lessons use a small markdown subset: `# ` and `## ` headings, paragraphs, `- ` bullets, and `**bold**`.
-- For true/false questions use the shared `TF` options. Multiple choice takes 3 or 4 options, and `answer` is the index of the correct one.
-- After changing content, increase `CONTENT_VERSION`. On next launch the app reloads the content and leaves progress untouched.
+```bash
+node scripts/import-site-content.mjs ../licensure-professor-app/content/content.json
+```
+
+- Units and lessons keep the site's keys (for example `ethics` and `ethics/the-counseling-profession`), and IDs are derived from them, so students keep their progress across updates.
+- Lesson text is the site's intro, sections, "Terms to know" and "On the exam", in a small markdown subset: `# ` and `## ` headings, paragraphs, `- ` bullets, and `**bold**`.
+- Each domain's questions are split, in site order, into sets of 10. Odd sets are untimed; even sets are timed at the site's exam pace of 67.5 seconds per item. The site's notes on wrong choices follow the explanation, lettered to match the options.
+- Not imported: lesson videos (the app makes no network requests), flashcards, the baseline and full-length forms, and the NCMHCE material.
+- After regenerating, increase `CONTENT_VERSION`. On next launch the app reloads the content and leaves progress untouched.
 
 ## Project layout
 
 ```
 App.tsx                     SQLite provider, data provider, navigation container
 src/types.ts                data model (Course, Lesson, Quiz, Question, UserProgress, QuizAttempt)
-src/data/content.ts         bundled sample course content
+src/data/content.ts         bundled course content (generated)
+scripts/import-site-content.mjs  rebuilds the content from the site bundle
 src/db/schema.ts            SQLite schema (content and progress tables)
 src/db/repo.ts              all reads and writes; progress is written immediately
 src/db/types.ts             the small database interface used by the app and tests
